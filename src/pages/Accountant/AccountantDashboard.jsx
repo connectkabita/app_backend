@@ -1,45 +1,96 @@
-import React from "react";
-import { useNavigate } from "react-router-dom";
-/* Ensure this path is correct: from src/pages/Accountant/ to src/pages/Admin/ */
-import "../Admin/AdminDashboard.css"; 
+import React from 'react';
+import './AccountantDashboard.css';
 
 const AccountantDashboard = () => {
-  const navigate = useNavigate();
-
-  const accStats = [
-    { label: "Pending Payroll", value: "Nov 2025", sub: "Monthly Cycle", icon: "💰", color: "#6366f1", path: "accountant/dashboard" },
-    { label: "Salary Verified", value: "142/154", sub: "Employee Records", icon: "✅", color: "#10b981", path: "accountant/dashboard" },
-    { label: "Total Deductions", value: "Rs. 42K", sub: "Tax & Insurance", icon: "📉", color: "#ef4444", path: "accountant/dashboard" },
-    { label: "Annual Budget", value: "1.02 Lakh", sub: "Project Total", icon: "🏦", color: "#3b82f6", path: "accountant/dashboard" },
-    { label: "Salary Slips", value: "Generated", sub: "Oct 2025 Batch", icon: "📄", color: "#f59e0b", path: "accountant/dashboard" },
-    { label: "System Alerts", value: "02", sub: "Audit Required", icon: "🔔", color: "#64748b", path: "accountant/dashboard" }
-  ];
-
   return (
-    <div className="dashboard-view-container">
-      <div className="overview-header">
-        <h1>Financial Dashboard</h1>
-        <p className="subtitle">Operational payroll data - Accountant Access Only</p>
-      </div>
-      <div className="stats-grid">
-        {accStats.map((stat, i) => (
-          <div key={i} className="pro-stat-card" onClick={() => navigate(`/${stat.path}`)}>
-            <div className="card-top-row">
-              <div className="card-info">
-                <span className="stat-label">{stat.label}</span>
-                <h2 className="stat-value">{stat.value}</h2>
-                <span className="stat-subtext">{stat.sub}</span>
-              </div>
-              <div className="stat-icon-wrapper" style={{ backgroundColor: `${stat.color}15`, color: stat.color }}>
-                {stat.icon}
-              </div>
+    <div className="pro-dash-content">
+      <header className="pro-dash-header">
+        <div className="header-text">
+          <h1>Accountant <span className="highlight">Command Center</span></h1>
+          <p>Real-time payroll status for NAST System • Fiscal Year 2025/26</p>
+        </div>
+        <div className="header-date">
+          <span className="calendar-icon">📅</span> Dec 21, 2025
+        </div>
+      </header>
+
+      <section className="kpi-stack-section">
+        <h3 className="sub-section-title">Critical Metrics</h3>
+        <div className="vertical-kpi-stack">
+          {/* Monthly Payroll Row */}
+          <div className="kpi-linear-card blue-glow">
+            <div className="kpi-icon-container">💰</div>
+            <div className="kpi-main-info">
+              <span className="kpi-tag">Monthly Payroll</span>
+              <h2 className="kpi-amount">Rs. 4.2M</h2>
             </div>
-            <div className="card-accent-bar">
-              <div className="accent-fill" style={{ width: '100%', backgroundColor: stat.color, height: '100%' }}></div>
+            <div className="kpi-meta">
+              <span className="meta-label">Status</span>
+              <span className="status-pill status-active">Processing</span>
             </div>
           </div>
-        ))}
-      </div>
+
+          {/* Tax Compliance Row */}
+          <div className="kpi-linear-card indigo-glow">
+            <div className="kpi-icon-container">🏛️</div>
+            <div className="kpi-main-info">
+              <span className="kpi-tag">Tax & SSF Compliance</span>
+              <h2 className="kpi-amount">100% Verified</h2>
+            </div>
+            <div className="kpi-meta">
+              <span className="meta-label">Audit</span>
+              <span className="status-pill status-secure">Government Compliant</span>
+            </div>
+          </div>
+
+          {/* Pending Verifications Row */}
+          <div className="kpi-linear-card amber-glow">
+            <div className="kpi-icon-container">⏳</div>
+            <div className="kpi-main-info">
+              <span className="kpi-tag">Pending Verifications</span>
+              <h2 className="kpi-amount">12 Records</h2>
+            </div>
+            <div className="kpi-meta">
+              <span className="meta-label">Action</span>
+              <span className="status-pill status-warn">Review Required</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="ops-grid-section">
+        <h3 className="sub-section-title">Management Portals</h3>
+        <div className="ops-portal-grid">
+          <button className="portal-tile">
+            <span className="tile-emoji">💸</span>
+            <div className="tile-text">
+              <h4>Calculate Salary</h4>
+              <p>Process net disbursements</p>
+            </div>
+          </button>
+          <button className="portal-tile">
+            <span className="tile-emoji">⚖️</span>
+            <div className="tile-text">
+              <h4>Tax Management</h4>
+              <p>Adjust slabs & SSF rates</p>
+            </div>
+          </button>
+          <button className="portal-tile">
+            <span className="tile-emoji">📂</span>
+            <div className="tile-text">
+              <h4>Payroll Ledger</h4>
+              <p>Access historical archives</p>
+            </div>
+          </button>
+          <button className="portal-tile active-portal">
+            <span className="tile-emoji">📊</span>
+            <div className="tile-text">
+              <h4>Financial Reports</h4>
+              <p>Generate CSV/PDF analytics</p>
+            </div>
+          </button>
+        </div>
+      </section>
     </div>
   );
 };

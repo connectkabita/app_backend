@@ -1,0 +1,17 @@
+.metrics-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 2rem; }
+.metric-card { background: white; padding: 1.5rem; border-radius: 12px; border: 1px solid #e2e8f0; border-top: 4px solid #4f46e5; }
+.metric-card span { color: #64748b; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; }
+.metric-card h2 { margin: 8px 0 0 0; color: #1e293b; font-size: 1.8rem; }
+.red-border { border-top-color: #ef4444; }
+.green-border { border-top-color: #22c55e; }
+
+.dept-list { padding: 0.5rem 1.5rem; }
+.dept-row { display: flex; justify-content: space-between; align-items: center; padding: 1.5rem 0; border-bottom: 1px solid #f1f5f9; }
+.dept-row:last-child { border-bottom: none; }
+.dept-info h4 { margin: 0; color: #0f172a; font-size: 1.05rem; }
+.dept-info p { margin: 4px 0 0 0; color: #64748b; font-size: 0.9rem; }
+
+.dept-progress-container { width: 300px; }
+.progress-label { font-size: 0.8rem; color: #64748b; margin-bottom: 6px; text-align: right; }
+.progress-bar { height: 8px; background: #f1f5f9; border-radius: 4px; overflow: hidden; }
+.progress-bar .fill { height: 100%; background: #4f46e5; border-radius: 4px; }

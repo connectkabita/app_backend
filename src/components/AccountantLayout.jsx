@@ -1,68 +1,59 @@
-import React from "react";
-import { Outlet, NavLink, useNavigate } from "react-router-dom";
-/* Relative path fix: points to Admin CSS for consistent branding */
-import "../pages/Admin/AdminLayout.css"; 
+import React from 'react';
+import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
+import './AccountantLayout.css';
 
 const AccountantLayout = () => {
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const handleLogout = () => {
+  const handleSignOut = () => {
     localStorage.removeItem("user_session");
     navigate("/");
   };
 
-  // Synchronized paths with App.js routes
-  const menuItems = [
-    { path: "dashboard", label: "Financial Overview", icon: "📊" },
-    { path: "payroll", label: "Payroll Processing", icon: "💸" }, // Changed to 'payroll'
-    { path: "tax-verification", label: "Tax & Deductions", icon: "🔍" },
-    { path: "reports", label: "Financial Reports", icon: "📈" }
-  ];
-
   return (
-    <div className="admin-container">
-      <aside className="admin-sidebar">
-        <div className="sidebar-header">
-          <div className="logo-box">NAST</div>
-          <h2 className="panel-title">Accountant</h2>
+    <div className="accountant-container">
+      {/* SIDEBAR SECTION */}
+      <aside className="sidebar">
+        <div className="sidebar-logo">
+          <h2>NAST</h2>
         </div>
-
-        <nav className="sidebar-nav">
-          {menuItems.map((item) => (
-            <NavLink 
-              key={item.path} 
-              to={item.path} 
-              className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}
-            >
-              <span className="nav-icon">{item.icon}</span>
-              <span className="nav-label">{item.label}</span>
-            </NavLink>
-          ))}
+        <nav className="sidebar-menu">
+          {/* CRITICAL: No leading slashes in 'to' paths */}
+          <Link to="dashboard" className={location.pathname.includes('dashboard') ? 'active' : ''}>
+            🏠 Dashboard
+          </Link>
+          <Link to="salary-management" className={location.pathname.includes('salary') ? 'active' : ''}>
+            💸 Salary Management
+          </Link>
+          <Link to="payroll-processing" className={location.pathname.includes('payroll') ? 'active' : ''}>
+            💰 Payroll Processing
+          </Link>
+          <Link to="tax-compliance" className={location.pathname.includes('tax') ? 'active' : ''}>
+            📄 Tax & Compliance
+          </Link>
+          <Link to="financial-reports" className={location.pathname.includes('report') ? 'active' : ''}>
+            📊 Financial Reports
+          </Link>
         </nav>
-
-        <button className="signout-btn" onClick={handleLogout}>
-          Sign Out
-        </button>
+        <button className="signout-btn" onClick={handleSignOut}>Sign Out</button>
       </aside>
 
-      <main className="admin-main">
-        <header className="admin-top-bar">
-          <div className="search-wrapper">
-            <input type="text" placeholder="Search budget records..." />
+      {/* MAIN CONTENT SECTION */}
+      <main className="main-content">
+        <header className="top-header">
+          <div className="search-bar">
+            <input type="text" placeholder="Search accounts..." />
           </div>
-          <div className="admin-profile">
-            <div className="profile-info">
-              <span className="name">Finance Dept</span>
-              <span className="role">Accountant Portal</span>
-            </div>
-            <div className="avatar">AC</div>
+          <div className="user-info">
+            <span>Accountant Finance Dept</span>
           </div>
         </header>
 
-        <div className="admin-content">
-          {/* This renders the AccountantDashboard or Payroll component */}
-          <Outlet /> 
-        </div>
+        <section className="page-body">
+          {/* THE OUTLET RENDERS THE CHILD COMPONENTS (Tax, Salary, etc.) */}
+          <Outlet />
+        </section>
       </main>
     </div>
   );

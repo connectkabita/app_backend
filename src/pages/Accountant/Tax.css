@@ -1,0 +1,25 @@
+.tax-container { padding: 30px; background-color: #f8f9fc; min-height: 100vh; }
+.tax-header h1 { color: #1e293b; font-weight: 700; margin-bottom: 5px; }
+.tax-header p { color: #64748b; margin-bottom: 30px; }
+
+.slab-card-wrapper {
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #cbd5e1;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+}
+
+.tax-table { width: 100%; border-collapse: collapse; }
+.tax-table th { background-color: #334155; color: white; padding: 15px 20px; text-align: left; }
+.tax-table td { padding: 18px 20px; border-bottom: 1px solid #e2e8f0; color: #0f172a; }
+.tax-table tr:nth-child(even) { background-color: #f8fafc; }
+
+.range-text { font-weight: 600; }
+.rate-badge {
+  background: #fee2e2;
+  color: #991b1b;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-weight: 800;
+}

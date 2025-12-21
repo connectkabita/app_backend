@@ -1,8 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 
 /* ================= LAYOUTS ================= */
-// These components provide the Sidebar and Topbar for each role
 import EmployeeLayout from "./components/EmployeeLayout";
 import AdminLayout from "./components/AdminLayout"; 
 import AccountantLayout from "./components/AccountantLayout"; 
@@ -20,15 +19,16 @@ import AdminDashboard from "./pages/Admin/AdminDashboard";
 import Employees from "./pages/Admin/Employees";
 import Attendance from "./pages/Admin/Attendance";
 import Leave from "./pages/Admin/Leave";
-import AdminPayroll from "./pages/Admin/Payroll"; // Renamed import to avoid conflict
+import AdminPayroll from "./pages/Admin/Payroll"; 
 import Report from "./pages/Admin/Report";
 import SystemConfig from "./pages/Admin/System-Config";
-import Forgotpw from "./pages/Admin/Forgotpw";
 
 /* ================= ACCOUNTANT PAGES ================= */
 import AccountantDashboard from "./pages/Accountant/AccountantDashboard"; 
-import AccountantPayroll from "./pages/Accountant/Payroll"; // New Functional Component
-import Forgotpass from "./pages/Accountant/Forgotpass";
+import AccountantPayroll from "./pages/Accountant/Payroll"; 
+import AccountantReport from "./pages/Accountant/Report";
+import Tax from "./pages/Accountant/Tax"; 
+import Salary from "./pages/Accountant/Salary"; 
 
 /* ================= EMPLOYEE PAGES ================= */
 import EmployeeDashboard from "./pages/Employee/EmployeeDashboard";
@@ -36,22 +36,30 @@ import AttendanceRecords from "./pages/Employee/AttendanceRecords";
 import LeaveManagement from "./pages/Employee/LeaveManagement";
 import SalaryAnalytics from "./pages/Employee/SalaryAnalytics";
 import Settings from "./pages/Employee/Settings";
-import ForgotPassword from "./pages/Employee/ForgotPassword";
 
-/* ================= AUTH GUARD ================= */
-// Prevents unauthorized access (e.g., Employee accessing Admin panel)
-const ProtectedRoute = ({ user, allowedRole, children }) => {
+/* ================= IMPROVED AUTH GUARD ================= */
+const ProtectedRoute = ({ allowedRole }) => {
+  const savedUser = localStorage.getItem("user_session");
+  const user = savedUser ? JSON.parse(savedUser) : null;
+
   if (!user) {
     return <Navigate to="/" replace />;
   }
-  if (user.role !== allowedRole) {
+
+  // Case-insensitive check and trim to avoid hidden space errors
+  const userRole = user.role.toLowerCase().trim();
+  const requiredRole = allowedRole.toLowerCase().trim();
+
+  if (userRole !== requiredRole) {
     return <Navigate to="/" replace />;
   }
-  return children;
+
+  return <Outlet />; // We use Outlet here for cleaner nesting
 };
 
+import { Outlet } from "react-router-dom";
+
 function App() {
-  // Session management logic
   const [user, setUser] = useState(() => {
     const savedUser = localStorage.getItem("user_session");
     return savedUser ? JSON.parse(savedUser) : null;
@@ -60,78 +68,57 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* Public Landing Page */}
         <Route path="/" element={<Landing />} />
 
-        {/* ================= LOGIN ROUTES ================= */}
+        {/* LOGIN ROUTES */}
         <Route path="/login/admin" element={<AdminLogin setUser={setUser} />} />
         <Route path="/login/accountant" element={<AccountantLogin setUser={setUser} />} />
         <Route path="/login/employee" element={<EmployeeLogin setUser={setUser} />} />
 
-        {/* ================= ADMIN PANEL (PROTECTED) ================= */}
-        <Route 
-          path="/admin" 
-          element={
-            <ProtectedRoute user={user} allowedRole="admin">
-              <AdminLayout />
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<Navigate to="dashboard" replace />} /> 
-          <Route path="dashboard" element={<AdminDashboard />} />
-          <Route path="employees" element={<Employees />} />
-          <Route path="attendance" element={<Attendance />} />
-          <Route path="leave" element={<Leave />} />
-          <Route path="payroll" element={<AdminPayroll />} />
-          <Route path="report" element={<Report />} />
-          <Route path="system-config" element={<SystemConfig />} />
+        {/* ACCOUNTANT PANEL - NESTED STRUCTURE */}
+        <Route path="/accountant" element={<ProtectedRoute allowedRole="accountant" />}>
+          <Route element={<AccountantLayout />}>
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<AccountantDashboard />} />
+            <Route path="payroll-processing" element={<AccountantPayroll />} />
+            <Route path="salary-management" element={<Salary />} />
+            <Route path="tax-compliance" element={<Tax />} />
+            <Route path="financial-reports" element={<AccountantReport />} />
+            {/* Fallbacks for older links */}
+            <Route path="payroll" element={<AccountantPayroll />} />
+            <Route path="salary" element={<Salary />} />
+            <Route path="tax" element={<Tax />} />
+            <Route path="report" element={<AccountantReport />} />
+          </Route>
         </Route>
-        <Route path="/admin/forgot-password" element={<Forgotpw />} />
 
-        {/* ================= ACCOUNTANT PANEL (PROTECTED) ================= */}
-        <Route 
-          path="/accountant" 
-          element={
-            <ProtectedRoute user={user} allowedRole="accountant">
-              <AccountantLayout />
-            </ProtectedRoute>
-          } 
-        >
-          <Route index element={<Navigate to="dashboard" replace />} />
-          <Route path="dashboard" element={<AccountantDashboard />} />
-          {/* Matches the 'to="payroll"' in your AccountantLayout.jsx menuItems */}
-          <Route path="payroll" element={<AccountantPayroll />} />
-          <Route path="tax-verification" element={<div>Tax Verification Logic Coming Soon</div>} />
-          <Route path="reports" element={<div>Financial Reporting Logic Coming Soon</div>} />
+        {/* ADMIN PANEL */}
+        <Route path="/admin" element={<ProtectedRoute allowedRole="admin" />}>
+          <Route element={<AdminLayout />}>
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="employees" element={<Employees />} />
+            <Route path="attendance" element={<Attendance />} />
+            <Route path="leave" element={<Leave />} />
+            <Route path="payroll" element={<AdminPayroll />} />
+            <Route path="report" element={<Report />} />
+            <Route path="system-config" element={<SystemConfig />} />
+          </Route>
         </Route>
-        <Route path="/accountant/forgot-password" element={<Forgotpass />} />
 
-        {/* ================= EMPLOYEE PANEL (PROTECTED) ================= */}
-        <Route 
-          path="/employee" 
-          element={
-            <ProtectedRoute user={user} allowedRole="employee">
-              <EmployeeLayout />
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<Navigate to="dashboard" replace />} />
-          <Route path="dashboard" element={<EmployeeDashboard />} />
-          <Route path="attendance" element={<AttendanceRecords />} />
-          <Route path="leave" element={<LeaveManagement />} />
-          <Route path="salary" element={<SalaryAnalytics />} />
-          <Route path="settings" element={<Settings />} />
+        {/* EMPLOYEE PANEL */}
+        <Route path="/employee" element={<ProtectedRoute allowedRole="employee" />}>
+          <Route element={<EmployeeLayout />}>
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<EmployeeDashboard />} />
+            <Route path="attendance" element={<AttendanceRecords />} />
+            <Route path="leave" element={<LeaveManagement />} />
+            <Route path="salary" element={<SalaryAnalytics />} />
+            <Route path="settings" element={<Settings />} />
+          </Route>
         </Route>
-        <Route path="/employee/forgot-password" element={<ForgotPassword />} />
 
-        {/* ================= 404 ERROR PAGE ================= */}
-        <Route path="*" element={
-          <div style={{ textAlign: "center", marginTop: "100px", fontFamily: "sans-serif" }}>
-            <h1 style={{ fontSize: "72px", color: "#1e293b" }}>404</h1>
-            <p style={{ color: "#64748b" }}>Access Denied or Page does not exist.</p>
-            <button onClick={() => window.location.href = "/"} style={{ marginTop: "20px", padding: "10px 20px", cursor: "pointer" }}>Back to Home</button>
-          </div>
-        } />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
   );
