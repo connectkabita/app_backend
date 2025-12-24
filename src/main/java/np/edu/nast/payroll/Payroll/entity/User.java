@@ -22,18 +22,29 @@ public class User {
 
     @Column(nullable = false)
     private String password;
-    @Column(nullable = false,  unique = true)
+
+    @Column(nullable = false, unique = true)
     private String email;
+
+    @OneToOne(optional = false, fetch = FetchType.LAZY)
+    @JoinColumn(name = "emp_id", nullable = false, unique = true)
+    private Employee employee;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "role_id", nullable = false)
     private Role role;
+
     @Column(nullable = false)
     private String status;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    // 🔥 FIX: Optimistic Locking to avoid stale update error
     @Version
     private Integer version;
+
+    @PrePersist
+    public void onCreate() {
+        this.createdAt = LocalDateTime.now();
+    }
 }

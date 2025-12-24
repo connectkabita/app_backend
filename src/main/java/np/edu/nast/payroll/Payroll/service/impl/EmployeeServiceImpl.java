@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @Transactional
@@ -40,38 +41,39 @@ public class EmployeeServiceImpl implements EmployeeService {
     public Employee create(Employee employee) {
 
         // ---------- FK NULL CHECK ----------
-        if (employee.getUser() == null || employee.getUser().getUserId() == null) {
-            throw new IllegalArgumentException("User ID is required");
-        }
         if (employee.getDepartment() == null || employee.getDepartment().getDeptId() == null) {
             throw new IllegalArgumentException("Department ID is required");
         }
+
         if (employee.getPosition() == null || employee.getPosition().getDesignationId() == null) {
             throw new IllegalArgumentException("Designation ID is required");
         }
 
         // ---------- FK EXISTENCE CHECK ----------
-        User user = userRepo.findById(employee.getUser().getUserId())
-                .orElseThrow(() ->
-                        new RuntimeException(
-                                "User not found with id: " + employee.getUser().getUserId()));
-
         Department department = departmentRepo.findById(employee.getDepartment().getDeptId())
                 .orElseThrow(() ->
-                        new RuntimeException(
-                                "Department not found with id: " + employee.getDepartment().getDeptId()));
+                        new RuntimeException("Department not found with id: "
+                                + employee.getDepartment().getDeptId()));
 
         Designation designation = designationRepo.findById(employee.getPosition().getDesignationId())
                 .orElseThrow(() ->
-                        new RuntimeException(
-                                "Designation not found with id: " + employee.getPosition().getDesignationId()));
+                        new RuntimeException("Designation not found with id: "
+                                + employee.getPosition().getDesignationId()));
 
         // ---------- ATTACH MANAGED ENTITIES ----------
-        employee.setUser(user);
         employee.setDepartment(department);
         employee.setPosition(designation);
 
-        return employeeRepo.save(employee);
+        Employee savedEmployee = employeeRepo.save(employee);
+
+        // ---------- OPTIONAL EMAIL SYNC (Employee → User) ----------
+        Optional<User> userOpt = userRepo.findByEmployee(savedEmployee);
+        userOpt.ifPresent(user -> {
+            user.setEmail(savedEmployee.getEmail());
+            userRepo.save(user);
+        });
+
+        return savedEmployee;
     }
 
     /* =========================
@@ -85,36 +87,28 @@ public class EmployeeServiceImpl implements EmployeeService {
                         new RuntimeException("Employee not found with id: " + id));
 
         // ---------- FK NULL CHECK ----------
-        if (employee.getUser() == null || employee.getUser().getUserId() == null ||
-                employee.getDepartment() == null || employee.getDepartment().getDeptId() == null ||
+        if (employee.getDepartment() == null || employee.getDepartment().getDeptId() == null ||
                 employee.getPosition() == null || employee.getPosition().getDesignationId() == null) {
             throw new IllegalArgumentException(
-                    "User, Department, and Designation IDs are required");
+                    "Department and Designation IDs are required");
         }
 
         // ---------- FK EXISTENCE CHECK ----------
-        User user = userRepo.findById(employee.getUser().getUserId())
-                .orElseThrow(() ->
-                        new RuntimeException(
-                                "User not found with id: " + employee.getUser().getUserId()));
-
         Department department = departmentRepo.findById(employee.getDepartment().getDeptId())
                 .orElseThrow(() ->
-                        new RuntimeException(
-                                "Department not found with id: " + employee.getDepartment().getDeptId()));
+                        new RuntimeException("Department not found with id: "
+                                + employee.getDepartment().getDeptId()));
 
         Designation designation = designationRepo.findById(employee.getPosition().getDesignationId())
                 .orElseThrow(() ->
-                        new RuntimeException(
-                                "Designation not found with id: " + employee.getPosition().getDesignationId()));
+                        new RuntimeException("Designation not found with id: "
+                                + employee.getPosition().getDesignationId()));
 
         // ---------- UPDATE VALUES ----------
-        existing.setUser(user);
         existing.setDepartment(department);
         existing.setPosition(designation);
         existing.setFirstName(employee.getFirstName());
         existing.setLastName(employee.getLastName());
-        existing.setEmail(employee.getEmail());
         existing.setContact(employee.getContact());
         existing.setMaritalStatus(employee.getMaritalStatus());
         existing.setEducation(employee.getEducation());
@@ -122,6 +116,18 @@ public class EmployeeServiceImpl implements EmployeeService {
         existing.setJoiningDate(employee.getJoiningDate());
         existing.setAddress(employee.getAddress());
         existing.setIsActive(employee.getIsActive());
+
+        // ---------- EMAIL SYNC ----------
+        if (employee.getEmail() != null &&
+                !employee.getEmail().equals(existing.getEmail())) {
+
+            existing.setEmail(employee.getEmail());
+
+            userRepo.findByEmployee(existing).ifPresent(user -> {
+                user.setEmail(employee.getEmail());
+                userRepo.save(user);
+            });
+        }
 
         return employeeRepo.save(existing);
     }
@@ -131,10 +137,18 @@ public class EmployeeServiceImpl implements EmployeeService {
        ========================= */
     @Override
     public void delete(Integer id) {
-        if (!employeeRepo.existsById(id)) {
-            throw new RuntimeException("Employee not found with id: " + id);
+
+        Employee employee = employeeRepo.findById(id)
+                .orElseThrow(() ->
+                        new RuntimeException("Employee not found with id: " + id));
+
+        // Prevent delete if user exists
+        if (userRepo.findByEmployee(employee).isPresent()) {
+            throw new RuntimeException(
+                    "Cannot delete employee while user account exists");
         }
-        employeeRepo.deleteById(id);
+
+        employeeRepo.delete(employee);
     }
 
     /* =========================
