@@ -10,18 +10,22 @@ import java.time.LocalDate;
 public class EmployeeSalaryComponent {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(nullable = false)
     private Integer escId;
 
     @ManyToOne
-    @JoinColumn(name = "emp_id")
+    @JoinColumn(name = "emp_id", nullable = false)
     private Employee employee;
 
     @ManyToOne
-    @JoinColumn(name = "component_id")
+    @JoinColumn(name = "component_id", nullable = false)
     private SalaryComponent salaryComponent;
-
+    @Column(nullable = false)
     private Double value;
+    @Column(nullable = false)
     private Boolean isActive;
+    @Column(nullable = false)
     private LocalDate effectiveFrom;
+    @Column(nullable = false)
     private LocalDate effectiveTo;
 }

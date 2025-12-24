@@ -10,20 +10,21 @@ import java.time.LocalDateTime;
 public class PayrollAudit {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer auditId;
+    @Column(nullable = false)
+    private long auditId;
 
     @ManyToOne
-    @JoinColumn(name = "payroll_id")
+    @JoinColumn(name = "payroll_id" ,nullable = false)
     private Payroll payroll;
 
-    @ManyToOne
-    @JoinColumn(name = "changed_by")
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "changed_by",  nullable = false)
     private User changedBy;
-
+    @Column(nullable = false)
     private String changeType;
-
+    @Column(nullable = false)
     @Lob
     private String changeDetails;
-
+    @Column(nullable = false)
     private LocalDateTime changedAt;
 }

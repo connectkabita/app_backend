@@ -36,7 +36,7 @@ public class Payroll {
      * Employee for whom payroll is generated
      * REQUIRED: payroll cannot exist without employee
      */
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "emp_id", nullable = false)
     private Employee employee;
 
@@ -44,7 +44,7 @@ public class Payroll {
      * User who processed payroll (Admin / Accountant)
      * REQUIRED for audit and accountability
      */
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "processed_by", nullable = false)
     private User processedBy;
 
@@ -52,7 +52,7 @@ public class Payroll {
      * Bank account where salary is paid
      * REQUIRED: ensures payment destination exists
      */
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "payment_account_id", nullable = false)
     private BankAccount paymentAccount;
 
@@ -64,15 +64,15 @@ public class Payroll {
      * Pay group (Monthly, Weekly, Contract, etc.)
      * Optional by business rule
      */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "pay_group_id")
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "pay_group_id", nullable = false)
     private PayGroup payGroup;
 
     /**
      * Payment method (Bank Transfer, Cash, Cheque, etc.)
      */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "payment_method_id")
+    @ManyToOne(fetch = FetchType.EAGER, optional = false)
+    @JoinColumn(name = "payment_method_id", nullable = false)
     private PaymentMethod paymentMethod;
 
     /* =========================
@@ -121,7 +121,7 @@ public class Payroll {
     /**
      * Timestamp when payroll was processed
      */
-    @Column(nullable = false)
+    @Column(nullable = false, updatable = false)
     private LocalDateTime processedAt;
 
     /* =========================

@@ -22,9 +22,11 @@ public class SalaryComponent {
     @ManyToOne(optional = false)
     @JoinColumn(name = "component_type_id", nullable = false)
     private SalaryComponentType componentType;
-
+    @Column(nullable = false)
     private String calculationMethod; // fixed, percentage_of_basic, formula
+    @Column(nullable = false)
     private Double defaultValue;
+    @Column(nullable = false)
     private String description;
 
     @Column(nullable = false)

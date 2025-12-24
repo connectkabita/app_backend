@@ -9,6 +9,7 @@ import lombok.*;
 public class Designation {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(nullable = false)
     private Integer designationId;
 
     @Column(nullable = false)

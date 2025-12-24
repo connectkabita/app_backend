@@ -10,7 +10,8 @@ public class SalaryComponentType {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long componentTypeId;
-
+    @Column(nullable = false)
     private String name;
+    @Column(nullable = false)
     private String description;
 }

@@ -22,17 +22,17 @@ public class EmployeeSalaryComponentController {
     }
 
     @PutMapping("/{id}")
-    public EmployeeSalaryComponent update(@PathVariable Long id, @RequestBody EmployeeSalaryComponent esc) {
+    public EmployeeSalaryComponent update(@PathVariable Integer id, @RequestBody EmployeeSalaryComponent esc) {
         return service.update(id, esc);
     }
 
     @DeleteMapping("/{id}")
-    public void delete(@PathVariable Long id) {
+    public void delete(@PathVariable Integer id) {
         service.delete(id);
     }
 
     @GetMapping("/{id}")
-    public EmployeeSalaryComponent getById(@PathVariable Long id) {
+    public EmployeeSalaryComponent getById(@PathVariable Integer id) {
         return service.getById(id);
     }
 

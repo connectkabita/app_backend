@@ -12,14 +12,15 @@ public class SalarySlip {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer slipId;
 
-    @ManyToOne
-    @JoinColumn(name = "payroll_id")
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "payroll_id", nullable = false)
     private Payroll payroll;
 
-    @ManyToOne
-    @JoinColumn(name = "generated_by")
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "generated_by",  nullable = false)
     private User generatedBy;
-
+    @Column(nullable = false, updatable = false)
     private LocalDateTime generatedDate;
+    @Column(nullable = false)
     private String pdfPath;
 }

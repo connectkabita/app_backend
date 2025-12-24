@@ -9,17 +9,20 @@ import lombok.*;
 public class PayrollItem {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(nullable = false)
     private Integer payrollItemId;
 
-    @ManyToOne
-    @JoinColumn(name = "payroll_id")
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "payroll_id",  nullable = false)
     private Payroll payroll;
 
-    @ManyToOne
-    @JoinColumn(name = "component_id")
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "component_id",  nullable = false)
     private SalaryComponent component;
-
+    @Column(nullable = false)
     private Double amount;
+    @Column(nullable = false)
     private String itemType;
+    @Column(nullable = false)
     private String notes;
 }

@@ -11,28 +11,38 @@ import java.time.LocalDateTime;
 public class MonthlyInfo {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(nullable = false)
     private Integer monthlyInfoId;
-
+    @Column(nullable = false)
     private String monthName;
+    @Column(nullable = false)
     private LocalDate monthStart;
+    @Column(nullable = false)
     private LocalDate monthEnd;
 
     @ManyToOne
-    @JoinColumn(name = "pay_group_id")
+    @JoinColumn(name = "pay_group_id",  nullable = false)
     private PayGroup payGroup;
-
+    @Column(nullable = false)
     private Integer totalEmployeesProcessed;
+    @Column(nullable = false)
     private Double totalGrossSalary;
+    @Column(nullable = false)
     private Double totalAllowances;
+    @Column(nullable = false)
     private Double totalDeductions;
+    @Column(nullable = false)
     private Double totalTax;
+    @Column(nullable = false)
     private Double totalNetSalary;
+    @Column(nullable = false)
     private String currency;
+    @Column(nullable = false)
     private String status;
 
     @ManyToOne
-    @JoinColumn(name = "generated_by")
+    @JoinColumn(name = "generated_by",  nullable = false)
     private User generatedBy;
-
+    @Column(nullable = false, updatable = false)
     private LocalDateTime generatedAt;
 }
