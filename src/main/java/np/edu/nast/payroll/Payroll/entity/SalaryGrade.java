@@ -10,6 +10,8 @@ public class SalaryGrade {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long gradeId;
+    @Column(nullable = false)
     private String gradeName;
+    @Column(nullable = false)
     private String description;
 }

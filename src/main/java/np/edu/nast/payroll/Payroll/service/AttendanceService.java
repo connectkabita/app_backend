@@ -7,9 +7,9 @@ import java.util.List;
 public interface AttendanceService {
 
     Attendance createAttendance(Attendance attendance);
-    Attendance updateAttendance(Long id, Attendance attendance);
-    void deleteAttendance(Long id);
-    Attendance getAttendanceById(Long id);
+    Attendance updateAttendance(Integer id, Attendance attendance);
+    void deleteAttendance(Integer id);
+    Attendance getAttendanceById(Integer id);
     List<Attendance> getAllAttendance();
-    List<Attendance> getAttendanceByEmployee(Long empId);
+    List<Attendance> getAttendanceByEmployee(Integer empId);
 }

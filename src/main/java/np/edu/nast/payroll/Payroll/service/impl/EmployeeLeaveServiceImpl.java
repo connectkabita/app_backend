@@ -1,30 +1,48 @@
 package np.edu.nast.payroll.Payroll.service.impl;
 
+import np.edu.nast.payroll.Payroll.entity.Employee;
 import np.edu.nast.payroll.Payroll.entity.EmployeeLeave;
+import np.edu.nast.payroll.Payroll.exception.ResourceNotFoundException;
 import np.edu.nast.payroll.Payroll.repository.EmployeeLeaveRepository;
+import np.edu.nast.payroll.Payroll.repository.EmployeeRepository;
 import np.edu.nast.payroll.Payroll.service.EmployeeLeaveService;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Service
+@Transactional
 public class EmployeeLeaveServiceImpl implements EmployeeLeaveService {
 
-    private final EmployeeLeaveRepository employeeLeaveRepository;
+    private final EmployeeLeaveRepository leaveRepository;
+    private final EmployeeRepository employeeRepository;
 
-    public EmployeeLeaveServiceImpl(EmployeeLeaveRepository repo) {
-        this.employeeLeaveRepository = repo;
+    public EmployeeLeaveServiceImpl(EmployeeLeaveRepository leaveRepository,
+                                    EmployeeRepository employeeRepository) {
+        this.leaveRepository = leaveRepository;
+        this.employeeRepository = employeeRepository;
     }
 
     @Override
     public EmployeeLeave requestLeave(EmployeeLeave leave) {
-        return employeeLeaveRepository.save(leave);
+        if (leave.getEmployee() == null || leave.getEmployee().getEmpId() == null) {
+            throw new IllegalArgumentException("Employee ID is required for leave request");
+        }
+
+        // Check if employee exists
+        Employee employee = employeeRepository.findById(leave.getEmployee().getEmpId())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Employee not found with ID: " + leave.getEmployee().getEmpId()));
+
+        leave.setEmployee(employee);
+        return leaveRepository.save(leave);
     }
 
     @Override
-    public EmployeeLeave updateLeave(Long id, EmployeeLeave leave) {
-        EmployeeLeave existing = employeeLeaveRepository.findById(Math.toIntExact(id))
-                .orElseThrow(() -> new RuntimeException("Leave not found"));
+    public EmployeeLeave updateLeave(Integer id, EmployeeLeave leave) {
+        EmployeeLeave existing = leaveRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Leave not found with ID: " + id));
 
         existing.setStartDate(leave.getStartDate());
         existing.setEndDate(leave.getEndDate());
@@ -32,27 +50,33 @@ public class EmployeeLeaveServiceImpl implements EmployeeLeaveService {
         existing.setStatus(leave.getStatus());
         existing.setReason(leave.getReason());
 
-        return employeeLeaveRepository.save(existing);
+        return leaveRepository.save(existing);
     }
 
     @Override
-    public void deleteLeave(Long id) {
-        employeeLeaveRepository.deleteById(Math.toIntExact(id));
+    public void deleteLeave(Integer id) {
+        if (!leaveRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Leave not found with ID: " + id);
+        }
+        leaveRepository.deleteById(id);
     }
 
     @Override
-    public EmployeeLeave getLeaveById(Long id) {
-        return employeeLeaveRepository.findById(Math.toIntExact(id))
-                .orElseThrow(() -> new RuntimeException("Leave not found"));
+    public EmployeeLeave getLeaveById(Integer id) {
+        return leaveRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Leave not found with ID: " + id));
     }
 
     @Override
     public List<EmployeeLeave> getAllLeaves() {
-        return employeeLeaveRepository.findAll();
+        return leaveRepository.findAll();
     }
 
     @Override
-    public List<EmployeeLeave> getLeavesByEmployee(Long empId) {
-        return employeeLeaveRepository.findByEmployeeEmpId(empId);
+    public List<EmployeeLeave> getLeavesByEmployee(Integer empId) {
+        if (!employeeRepository.existsById(empId)) {
+            throw new ResourceNotFoundException("Employee not found with ID: " + empId);
+        }
+        return leaveRepository.findByEmployeeEmpId(empId);
     }
 }

@@ -7,5 +7,6 @@ public interface DeductionHeadService {
     DeductionHead saveDeductionHead(DeductionHead head);
     List<DeductionHead> getAllDeductionHeads();
     DeductionHead getDeductionHeadById(Integer id);
+    DeductionHead updateDeductionHead(DeductionHead head);
     void deleteDeductionHead(Integer id);
 }

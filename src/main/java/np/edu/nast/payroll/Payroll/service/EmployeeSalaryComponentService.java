@@ -6,8 +6,8 @@ import java.util.List;
 public interface EmployeeSalaryComponentService {
 
     EmployeeSalaryComponent create(EmployeeSalaryComponent esc);
-    EmployeeSalaryComponent update(Long id, EmployeeSalaryComponent esc);
-    void delete(Long id);
-    EmployeeSalaryComponent getById(Long id);
+    EmployeeSalaryComponent update(Integer id, EmployeeSalaryComponent esc);
+    void delete(Integer id);
+    EmployeeSalaryComponent getById(Integer id);
     List<EmployeeSalaryComponent> getAll();
 }

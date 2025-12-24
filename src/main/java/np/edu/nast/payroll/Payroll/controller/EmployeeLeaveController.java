@@ -22,17 +22,17 @@ public class EmployeeLeaveController {
     }
 
     @PutMapping("/{id}")
-    public EmployeeLeave updateLeave(@PathVariable Long id, @RequestBody EmployeeLeave leave) {
+    public EmployeeLeave updateLeave(@PathVariable Integer id, @RequestBody EmployeeLeave leave) {
         return employeeLeaveService.updateLeave(id, leave);
     }
 
     @DeleteMapping("/{id}")
-    public void delete(@PathVariable Long id) {
+    public void delete(@PathVariable Integer id) {
         employeeLeaveService.deleteLeave(id);
     }
 
     @GetMapping("/{id}")
-    public EmployeeLeave getById(@PathVariable Long id) {
+    public EmployeeLeave getById(@PathVariable Integer id) {
         return employeeLeaveService.getLeaveById(id);
     }
 
@@ -42,7 +42,7 @@ public class EmployeeLeaveController {
     }
 
     @GetMapping("/employee/{empId}")
-    public List<EmployeeLeave> getByEmployee(@PathVariable Long empId) {
+    public List<EmployeeLeave> getByEmployee(@PathVariable Integer empId) {
         return employeeLeaveService.getLeavesByEmployee(empId);
     }
 }

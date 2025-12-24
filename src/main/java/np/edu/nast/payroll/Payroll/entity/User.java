@@ -22,15 +22,15 @@ public class User {
 
     @Column(nullable = false)
     private String password;
-
+    @Column(nullable = false,  unique = true)
     private String email;
 
-    @ManyToOne
-    @JoinColumn(name = "role_id")
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "role_id", nullable = false)
     private Role role;
-
+    @Column(nullable = false)
     private String status;
-
+    @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     // 🔥 FIX: Optimistic Locking to avoid stale update error

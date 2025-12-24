@@ -9,10 +9,13 @@ import lombok.*;
 public class LeaveType {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(nullable = false)
     private Integer leaveTypeId;
-
+    @Column(nullable = false)
     private String typeName;
+    @Column(nullable = false)
     private Integer defaultDaysPerYear;
+    @Column(nullable = false)
     private Boolean paid;
 
     // FIX: Added the return statement for the manually defined isPaid() method.

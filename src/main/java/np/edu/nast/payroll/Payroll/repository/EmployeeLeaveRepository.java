@@ -5,5 +5,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface EmployeeLeaveRepository extends JpaRepository<EmployeeLeave, Integer> {
-    List<EmployeeLeave> findByEmployeeEmpId(Long empId);
+    List<EmployeeLeave> findByEmployeeEmpId(Integer empId);
 }
