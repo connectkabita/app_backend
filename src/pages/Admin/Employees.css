@@ -15,29 +15,51 @@ h1 {
   color: #2c3e50;
 }
 
+/* Table container for scroll */
+.table-container {
+  width: 100%;
+  height: calc(100vh - 300px); /* adjust to leave space for header/stats */
+  overflow: auto;              /* enables both horizontal and vertical scroll */
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 5px;
+  background-color: #fff;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+}
+
 /* Table styling */
 .employee-table {
-  width: 100%;
+  width: max-content; /* allows horizontal scroll if table is wider than container */
+  min-width: 100%;
   border-collapse: collapse;
-  margin: 0 auto;
-  background-color: #fff;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-  border-radius: 8px;
-  overflow: hidden;
 }
 
 .employee-table th,
 .employee-table td {
   padding: 12px 15px;
   text-align: left;
+  white-space: nowrap; /* prevent text wrapping */
 }
 
-.employee-table thead {
+/* Sticky table header */
+.employee-table thead th {
+  position: sticky;
+  top: 0;
   background-color: #2c3e50;
   color: #fff;
-  font-weight: bold;
+  z-index: 2;
 }
 
+/* Optional: Sticky last column for Actions */
+.employee-table th:last-child,
+.employee-table td:last-child {
+  position: sticky;
+  right: 0;
+  background-color: #fff;
+  z-index: 3;
+}
+
+/* Table rows */
 .employee-table tbody tr {
   border-bottom: 1px solid #ddd;
   transition: background-color 0.2s ease;
@@ -105,6 +127,26 @@ h1 {
 
 .employee-table button:nth-child(2):hover {
   background-color: #c0392b;
+}
+
+/* Add button styling */
+.add-btn {
+  margin: 10px 0;
+  padding: 6px 12px;
+  background-color: #27ae60;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.add-btn:hover {
+  background-color: #1e8449;
+}
+
+/* Search container */
+.search-container {
+  margin-bottom: 10px;
 }
 
 /* Responsive table */

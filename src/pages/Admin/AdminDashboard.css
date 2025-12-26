@@ -121,3 +121,32 @@
   margin: 3px 0 0 0;
   line-height: 1.2;
 }
+/* SEARCH BAR */
+.dashboard-search-bar {
+  width: 100%;
+  max-width: 400px;
+  padding: 10px 15px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  background-color: #e8f0fe; /* new background color */
+  font-size: 16px;
+  outline: none;
+  margin-bottom: 25px;
+}
+
+.dashboard-search-bar:focus {
+  border-color: #4e73df;
+  box-shadow: 0 0 5px rgba(78, 115, 223, 0.4);
+}
+/* Footer styling */
+.dashboard-footer {
+  margin-top: 3rem;
+  padding: 1rem 0;
+  text-align: center;
+  background-color: #4e73df; /* different color from dashboard */
+  color: #fff;
+  font-weight: 600;
+  border-radius: 12px; /* rounded corners */
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  font-size: 0.95rem;
+}
