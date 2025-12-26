@@ -2,7 +2,6 @@ package np.edu.nast.payroll.Payroll.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.time.LocalDateTime;
 
 @Entity
@@ -11,7 +10,7 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@Builder // <--- This allows the .builder() in your Service
 public class User {
 
     @Id
@@ -35,14 +34,15 @@ public class User {
     @JoinColumn(name = "role_id", nullable = false)
     private Role role;
 
-    @Column(nullable = false)
     private String status;
 
-    @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    @Column(name = "reset_token")
+    private String resetToken;
 
-    @Version
-    private Integer version;
+    @Column(name = "token_expiry")
+    private LocalDateTime tokenExpiry;
+
+    private LocalDateTime createdAt;
 
     @PrePersist
     public void onCreate() {

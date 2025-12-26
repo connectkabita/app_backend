@@ -5,8 +5,9 @@ import java.util.List;
 
 public interface LeaveTypeService {
     LeaveType createLeaveType(LeaveType leaveType);
-    LeaveType updateLeaveType(Long id, LeaveType leaveType);
-    void deleteLeaveType(Long id);
-    LeaveType getLeaveTypeById(Long id);
     List<LeaveType> getAllLeaveTypes();
+    LeaveType getLeaveTypeById(Integer id);
+    // CHANGE: Use Integer to match Repository
+    LeaveType updateLeaveType(Integer id, LeaveType leaveType);
+    void deleteLeaveType(Integer id);
 }

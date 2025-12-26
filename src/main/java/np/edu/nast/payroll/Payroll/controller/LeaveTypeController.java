@@ -3,7 +3,6 @@ package np.edu.nast.payroll.Payroll.controller;
 import np.edu.nast.payroll.Payroll.entity.LeaveType;
 import np.edu.nast.payroll.Payroll.service.LeaveTypeService;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 
 @RestController
@@ -21,23 +20,20 @@ public class LeaveTypeController {
         return leaveTypeService.createLeaveType(leaveType);
     }
 
+    @GetMapping
+    public List<LeaveType> getAll() {
+        return leaveTypeService.getAllLeaveTypes();
+    }
+
     @PutMapping("/{id}")
-    public LeaveType update(@PathVariable Long id, @RequestBody LeaveType leaveType) {
+    // CHANGE: Long to Integer
+    public LeaveType update(@PathVariable Integer id, @RequestBody LeaveType leaveType) {
         return leaveTypeService.updateLeaveType(id, leaveType);
     }
 
     @DeleteMapping("/{id}")
-    public void delete(@PathVariable Long id) {
+    // CHANGE: Long to Integer
+    public void delete(@PathVariable Integer id) {
         leaveTypeService.deleteLeaveType(id);
-    }
-
-    @GetMapping("/{id}")
-    public LeaveType getById(@PathVariable Long id) {
-        return leaveTypeService.getLeaveTypeById(id);
-    }
-
-    @GetMapping
-    public List<LeaveType> getAll() {
-        return leaveTypeService.getAllLeaveTypes();
     }
 }

@@ -2,32 +2,80 @@ package np.edu.nast.payroll.Payroll.controller;
 
 import np.edu.nast.payroll.Payroll.entity.User;
 import np.edu.nast.payroll.Payroll.service.UserService;
-import org.springframework.http.HttpStatus;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/users")
+@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:5174", "http://localhost:5175"})
 public class UserController {
 
-    private final UserService svc;
+    @Autowired
+    private UserService userService;
 
-    public UserController(UserService svc) { this.svc = svc; }
+    // Handles POST to http://localhost:8080/api/users/add
+    @PostMapping("/add")
+    public User addUser(@RequestBody User user) {
+        // Warning: Ensure the emp_id in 'user' exists in your employee table
+        return userService.create(user);
+    }
 
-    @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public User create(@RequestBody User user) { return svc.create(user); }
+    // NEW: Trigger OTP sending to ALL users in the user table
+    @PostMapping("/send-otp-to-all")
+    public ResponseEntity<String> sendOtpToAll() {
+        try {
+            userService.sendOtpToAllUsers();
+            return ResponseEntity.ok("OTPs have been sent to all registered user emails.");
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Error: " + e.getMessage());
+        }
+    }
 
-    @GetMapping
-    public List<User> getAll() { return svc.getAll(); }
+    @PostMapping("/invite/{empId}")
+    public String inviteUser(@PathVariable Integer empId) {
+        try {
+            // Service handles account setup and email sending now
+            User user = userService.setupDefaultAccount(empId);
+            return "Invitation with OTP sent to " + user.getEmail();
+        } catch (Exception e) {
+            return "Error: " + e.getMessage();
+        }
+    }
 
-    @GetMapping("/{id}")
-    public User getById(@PathVariable Integer id) { return svc.getById(id); }
+    @PostMapping("/forgot-password")
+    public String forgotPassword(@RequestParam("email") String email) {
+        try {
+            // getByEmail now generates a new 6-digit OTP and sends it
+            userService.getByEmail(email);
+            return "Reset OTP sent to your email.";
+        } catch (Exception e) {
+            return "Error: " + e.getMessage();
+        }
+    }
 
-    @PutMapping("/{id}")
-    public User update(@PathVariable Integer id, @RequestBody User user) { return svc.update(id, user); }
+    @PostMapping("/reset-password")
+    public String resetPassword(@RequestParam String token, @RequestParam String newPassword) {
+        try {
+            // Token here is the 6-digit OTP
+            userService.resetPassword(token, newPassword);
+            return "Success: Account is now ACTIVE.";
+        } catch (Exception e) {
+            return "Failed: " + e.getMessage();
+        }
+    }
 
     @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable Integer id) { svc.delete(id); }
+    public String deleteUser(@PathVariable Integer id) {
+        userService.delete(id);
+        return "User deleted successfully";
+    }
+
+    @GetMapping
+    public List<User> getAllUsers() {
+        return userService.getAll();
+    }
 }

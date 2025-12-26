@@ -1,17 +1,14 @@
 package np.edu.nast.payroll.Payroll.service.impl;
 
-import np.edu.nast.payroll.Payroll.entity.Employee;
-import np.edu.nast.payroll.Payroll.entity.Role;
-import np.edu.nast.payroll.Payroll.entity.User;
-import np.edu.nast.payroll.Payroll.repository.EmployeeRepository;
-import np.edu.nast.payroll.Payroll.repository.RoleRepository;
-import np.edu.nast.payroll.Payroll.repository.UserRepository;
+import np.edu.nast.payroll.Payroll.entity.*;
+import np.edu.nast.payroll.Payroll.repository.*;
 import np.edu.nast.payroll.Payroll.service.UserService;
+import np.edu.nast.payroll.Payroll.service.EmailService; // Ensure this is imported
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Random;
 
 @Service
 @Transactional
@@ -20,100 +17,119 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepo;
     private final RoleRepository roleRepo;
     private final EmployeeRepository employeeRepo;
+    private final EmailService emailService; // Inject EmailService
 
-    public UserServiceImpl(
-            UserRepository userRepo,
-            RoleRepository roleRepo,
-            EmployeeRepository employeeRepo
-    ) {
+    public UserServiceImpl(UserRepository userRepo, RoleRepository roleRepo,
+                           EmployeeRepository employeeRepo, EmailService emailService) {
         this.userRepo = userRepo;
         this.roleRepo = roleRepo;
         this.employeeRepo = employeeRepo;
+        this.emailService = emailService;
+    }
+
+    private String generateSimpleToken() {
+        Random random = new Random();
+        int code = 100000 + random.nextInt(900000);
+        return String.valueOf(code);
     }
 
     /**
-     * CREATE USER
-     * RULES:
-     * - Employee MUST exist
-     * - Employee must NOT already have a user
-     * - Email is copied from employee
+     * Sends a new 6-digit OTP to every user currently in the database.
      */
-    @Override
-    public User create(User user) {
+    public void sendOtpToAllUsers() {
+        List<User> allUsers = userRepo.findAll();
+        for (User user : allUsers) {
+            String otp = generateSimpleToken();
+            user.setResetToken(otp);
+            user.setTokenExpiry(LocalDateTime.now().plusHours(24));
+            userRepo.save(user);
 
-        if (user.getEmployee() == null || user.getEmployee().getEmpId() == null) {
-            throw new RuntimeException("Employee ID is required");
+            // This sends the OTP to each user's specific email in the table
+            emailService.sendOtpEmail(user.getEmail(), otp);
         }
+    }
 
-        Employee employee = employeeRepo.findById(user.getEmployee().getEmpId())
+    @Override
+    public User setupDefaultAccount(Integer empId) {
+        Employee employee = employeeRepo.findById(empId)
                 .orElseThrow(() -> new RuntimeException("Employee not found"));
 
         if (employee.getUser() != null) {
             throw new RuntimeException("User already exists for this employee");
         }
 
-        Role role = roleRepo.findById(user.getRole().getRoleId())
-                .orElseThrow(() -> new RuntimeException("Role not found"));
+        Role role = roleRepo.findById(2).orElseThrow(() -> new RuntimeException("Default Role not found"));
 
+        User user = new User();
         user.setEmployee(employee);
         user.setEmail(employee.getEmail());
+        user.setUsername(employee.getFirstName().toLowerCase() + employee.getEmpId());
+        user.setPassword("Default@123");
         user.setRole(role);
-        user.setStatus(user.getStatus() != null ? user.getStatus() : "ACTIVE");
-        user.setCreatedAt(LocalDateTime.now());
+        user.setStatus("PENDING");
 
-        employee.setUser(user); // 🔑 link both sides
+        String otp = generateSimpleToken();
+        user.setResetToken(otp);
+        user.setTokenExpiry(LocalDateTime.now().plusHours(24));
 
-        return userRepo.save(user);
+        User savedUser = userRepo.save(user);
+        emailService.sendOtpEmail(savedUser.getEmail(), otp);
+
+        return savedUser;
     }
 
-    /**
-     * UPDATE USER
-     * - Username / password / role / status only
-     * - Email comes ONLY from employee
-     */
-    @Override
-    public User update(Integer id, User user) {
-
-        User existing = userRepo.findById(id)
+    public void verifyOtpAndSetPassword(String email, String otp, String newPassword) {
+        User user = userRepo.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        existing.setUsername(user.getUsername());
-        existing.setPassword(user.getPassword());
+        if (user.getResetToken() != null &&
+                user.getResetToken().equals(otp) &&
+                user.getTokenExpiry().isAfter(LocalDateTime.now())) {
 
-        if (user.getRole() != null && user.getRole().getRoleId() != null) {
-            Role role = roleRepo.findById(user.getRole().getRoleId())
-                    .orElseThrow(() -> new RuntimeException("Role not found"));
-            existing.setRole(role);
+            user.setPassword(newPassword);
+            user.setStatus("ACTIVE");
+            user.setResetToken(null);
+            user.setTokenExpiry(null);
+            userRepo.save(user);
+        } else {
+            throw new RuntimeException("Invalid or expired OTP");
+        }
+    }
+
+    @Override
+    public void resetPassword(String token, String newPassword) {
+        User user = userRepo.findByResetToken(token)
+                .orElseThrow(() -> new RuntimeException("Invalid or expired token"));
+
+        if (user.getTokenExpiry().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("Token expired");
         }
 
-        if (user.getStatus() != null) {
-            existing.setStatus(user.getStatus());
-        }
-
-        return userRepo.save(existing);
+        user.setPassword(newPassword);
+        user.setStatus("ACTIVE");
+        user.setResetToken(null);
+        user.setTokenExpiry(null);
+        userRepo.save(user);
     }
 
-    /**
-     * DELETE USER ONLY
-     * - Employee remains
-     */
     @Override
-    public void delete(Integer id) {
-        User user = userRepo.findById(id)
+    public User getByEmail(String email) {
+        User user = userRepo.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        user.getEmployee().setUser(null);
-        userRepo.delete(user);
+        String otp = generateSimpleToken();
+        user.setResetToken(otp);
+        user.setTokenExpiry(LocalDateTime.now().plusMinutes(30));
+
+        User savedUser = userRepo.save(user);
+        emailService.sendOtpEmail(savedUser.getEmail(), otp);
+
+        return savedUser;
     }
 
-    @Override
-    public User getById(Integer id) {
-        return userRepo.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-    }
-
-    @Override
-    public List<User> getAll() {
-        return userRepo.findAll();
-    }
+    @Override public List<User> getAll() { return userRepo.findAll(); }
+    @Override public User create(User user) { return userRepo.save(user); }
+    @Override public User getById(Integer id) { return userRepo.findById(id).orElse(null); }
+    @Override public User update(Integer id, User user) { return userRepo.save(user); }
+    @Override public void delete(Integer id) { userRepo.deleteById(id); }
 }

@@ -1,16 +1,14 @@
 package np.edu.nast.payroll.Payroll.repository;
 
-import np.edu.nast.payroll.Payroll.entity.Employee;
 import np.edu.nast.payroll.Payroll.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 
 public interface UserRepository extends JpaRepository<User, Integer> {
-
-    Optional<User> findByUsername(String username);
-
-    Optional<User> findByEmail(String email);
-
+    // Required for login logic
     Optional<User> findByUsernameOrEmail(String username, String email);
-    Optional<User> findByEmployee(Employee employee);
+
+    // Required for forgot password and reset token logic
+    Optional<User> findByEmail(String email);
+    Optional<User> findByResetToken(String token);
 }

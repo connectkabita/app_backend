@@ -1,82 +1,56 @@
 package np.edu.nast.payroll.Payroll.service.impl;
 
-import np.edu.nast.payroll.Payroll.entity.Employee;
+import lombok.RequiredArgsConstructor;
 import np.edu.nast.payroll.Payroll.entity.EmployeeLeave;
-import np.edu.nast.payroll.Payroll.exception.ResourceNotFoundException;
+import np.edu.nast.payroll.Payroll.entity.User;
 import np.edu.nast.payroll.Payroll.repository.EmployeeLeaveRepository;
-import np.edu.nast.payroll.Payroll.repository.EmployeeRepository;
+import np.edu.nast.payroll.Payroll.repository.UserRepository;
 import np.edu.nast.payroll.Payroll.service.EmployeeLeaveService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
-@Transactional
+@RequiredArgsConstructor
 public class EmployeeLeaveServiceImpl implements EmployeeLeaveService {
 
-    private final EmployeeLeaveRepository leaveRepository;
-    private final EmployeeRepository employeeRepository;
-
-    public EmployeeLeaveServiceImpl(EmployeeLeaveRepository leaveRepository,
-                                    EmployeeRepository employeeRepository) {
-        this.leaveRepository = leaveRepository;
-        this.employeeRepository = employeeRepository;
-    }
-
-    @Override
-    public EmployeeLeave requestLeave(EmployeeLeave leave) {
-        if (leave.getEmployee() == null || leave.getEmployee().getEmpId() == null) {
-            throw new IllegalArgumentException("Employee ID is required for leave request");
-        }
-
-        // Check if employee exists
-        Employee employee = employeeRepository.findById(leave.getEmployee().getEmpId())
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Employee not found with ID: " + leave.getEmployee().getEmpId()));
-
-        leave.setEmployee(employee);
-        return leaveRepository.save(leave);
-    }
-
-    @Override
-    public EmployeeLeave updateLeave(Integer id, EmployeeLeave leave) {
-        EmployeeLeave existing = leaveRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Leave not found with ID: " + id));
-
-        existing.setStartDate(leave.getStartDate());
-        existing.setEndDate(leave.getEndDate());
-        existing.setTotalDays(leave.getTotalDays());
-        existing.setStatus(leave.getStatus());
-        existing.setReason(leave.getReason());
-
-        return leaveRepository.save(existing);
-    }
-
-    @Override
-    public void deleteLeave(Integer id) {
-        if (!leaveRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Leave not found with ID: " + id);
-        }
-        leaveRepository.deleteById(id);
-    }
-
-    @Override
-    public EmployeeLeave getLeaveById(Integer id) {
-        return leaveRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Leave not found with ID: " + id));
-    }
+    private final EmployeeLeaveRepository employeeLeaveRepo;
+    private final UserRepository userRepo;
 
     @Override
     public List<EmployeeLeave> getAllLeaves() {
-        return leaveRepository.findAll();
+        return employeeLeaveRepo.findAll();
     }
 
     @Override
-    public List<EmployeeLeave> getLeavesByEmployee(Integer empId) {
-        if (!employeeRepository.existsById(empId)) {
-            throw new ResourceNotFoundException("Employee not found with ID: " + empId);
+    @Transactional
+    public EmployeeLeave updateLeaveStatus(Integer id, String status, Integer adminId) {
+        EmployeeLeave leave = employeeLeaveRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Leave record not found"));
+
+        leave.setStatus(status);
+
+        if ("Approved".equalsIgnoreCase(status)) {
+            // Find the admin user who is performing the approval
+            User admin = userRepo.findById(adminId)
+                    .orElseThrow(() -> new RuntimeException("Admin User not found with ID: " + adminId));
+
+            leave.setApprovedBy(admin); // Updates the approved_by column
+            leave.setApprovedAt(LocalDateTime.now()); // Updates the approved_at column
+        } else {
+            // If rejected, clear approval audit data
+            leave.setApprovedBy(null);
+            leave.setApprovedAt(null);
         }
-        return leaveRepository.findByEmployeeEmpId(empId);
+
+        return employeeLeaveRepo.save(leave);
     }
+
+    @Override public EmployeeLeave requestLeave(EmployeeLeave leave) { return employeeLeaveRepo.save(leave); }
+    @Override public EmployeeLeave getLeaveById(Integer id) { return employeeLeaveRepo.findById(id).orElse(null); }
+    @Override public List<EmployeeLeave> getLeavesByEmployee(Integer empId) { return employeeLeaveRepo.findAll(); }
+    @Override public void deleteLeave(Integer id) { employeeLeaveRepo.deleteById(id); }
+    @Override public EmployeeLeave updateLeave(Integer id, EmployeeLeave leave) { return employeeLeaveRepo.save(leave); }
 }

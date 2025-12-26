@@ -21,117 +21,66 @@ import java.time.LocalDateTime;
 @Builder
 public class Payroll {
 
-    /* =========================
-       Primary Key
-       ========================= */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer payrollId;
 
-    /* =========================
-       REQUIRED FOREIGN KEYS
-       ========================= */
-
-    /**
-     * Employee for whom payroll is generated
-     * REQUIRED: payroll cannot exist without employee
-     */
     @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "emp_id", nullable = false)
     private Employee employee;
 
-    /**
-     * User who processed payroll (Admin / Accountant)
-     * REQUIRED for audit and accountability
-     */
     @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "processed_by", nullable = false)
     private User processedBy;
 
-    /**
-     * Bank account where salary is paid
-     * REQUIRED: ensures payment destination exists
-     */
+    // Renamed to match the account_id column we fixed in bank_account
     @ManyToOne(fetch = FetchType.EAGER, optional = false)
-    @JoinColumn(name = "payment_account_id", nullable = false)
+    @JoinColumn(name = "account_id", nullable = false)
     private BankAccount paymentAccount;
 
-    /* =========================
-       OPTIONAL FOREIGN KEYS
-       ========================= */
-
-    /**
-     * Pay group (Monthly, Weekly, Contract, etc.)
-     * Optional by business rule
-     */
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "pay_group_id", nullable = false)
+    @JoinColumn(name = "pay_group_id", nullable = true) // Relaxed for migration
     private PayGroup payGroup;
 
-    /**
-     * Payment method (Bank Transfer, Cash, Cheque, etc.)
-     */
     @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "payment_method_id", nullable = false)
     private PaymentMethod paymentMethod;
 
     /* =========================
        PAY PERIOD INFORMATION
+       Relaxed to nullable = true temporarily to fix DDL errors
        ========================= */
-
-    @Column(nullable = false)
+    @Column(nullable = true)
     private LocalDate payPeriodStart;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private LocalDate payPeriodEnd;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private LocalDate payDate;
 
-    /* =========================
-       SALARY BREAKDOWN
-       ========================= */
+    @Column(nullable = false)
+    private Double grossSalary = 0.0;
 
     @Column(nullable = false)
-    private Double grossSalary;
+    private Double totalAllowances = 0.0;
 
     @Column(nullable = false)
-    private Double totalAllowances;
+    private Double totalDeductions = 0.0;
 
     @Column(nullable = false)
-    private Double totalDeductions;
+    private Double totalTax = 0.0;
 
     @Column(nullable = false)
-    private Double totalTax;
+    private Double netSalary = 0.0;
 
-    @Column(nullable = false)
-    private Double netSalary;
-
-    /* =========================
-       STATUS & AUDIT
-       ========================= */
-
-    /**
-     * Allowed values (recommended):
-     * DRAFT, PROCESSED, PAID, REVERSED
-     */
     @Column(nullable = false, length = 20)
     private String status;
 
-    /**
-     * Timestamp when payroll was processed
-     */
+    @Builder.Default // Ensures Lombok builder doesn't nullify this
     @Column(nullable = false, updatable = false)
-    private LocalDateTime processedAt;
+    private LocalDateTime processedAt = LocalDateTime.now();
 
-    /* =========================
-       LIFECYCLE CALLBACKS
-       ========================= */
-
-    /**
-     * Ensures processedAt is always set
-     * even if client forgets to send it
-     */
     @PrePersist
     protected void onCreate() {
         if (this.processedAt == null) {

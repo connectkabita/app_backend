@@ -4,7 +4,6 @@ import np.edu.nast.payroll.Payroll.entity.LeaveType;
 import np.edu.nast.payroll.Payroll.repository.LeaveTypeRepository;
 import np.edu.nast.payroll.Payroll.service.LeaveTypeService;
 import org.springframework.stereotype.Service;
-
 import java.util.List;
 
 @Service
@@ -17,12 +16,8 @@ public class LeaveTypeServiceImpl implements LeaveTypeService {
     }
 
     @Override
-    public LeaveType createLeaveType(LeaveType leaveType) {
-        return leaveTypeRepository.save(leaveType);
-    }
-
-    @Override
-    public LeaveType updateLeaveType(Long id, LeaveType leaveType) {
+    public LeaveType updateLeaveType(Integer id, LeaveType leaveType) {
+        // Now id is Integer, matching leaveTypeRepository.findById(Integer)
         LeaveType existing = leaveTypeRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("LeaveType not found"));
 
@@ -34,18 +29,12 @@ public class LeaveTypeServiceImpl implements LeaveTypeService {
     }
 
     @Override
-    public void deleteLeaveType(Long id) {
+    public void deleteLeaveType(Integer id) {
         leaveTypeRepository.deleteById(id);
     }
 
-    @Override
-    public LeaveType getLeaveTypeById(Long id) {
-        return leaveTypeRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Leave type not found"));
-    }
-
-    @Override
-    public List<LeaveType> getAllLeaveTypes() {
-        return leaveTypeRepository.findAll();
-    }
+    // Ensure all other override methods also use Integer
+    @Override public LeaveType createLeaveType(LeaveType lt) { return leaveTypeRepository.save(lt); }
+    @Override public List<LeaveType> getAllLeaveTypes() { return leaveTypeRepository.findAll(); }
+    @Override public LeaveType getLeaveTypeById(Integer id) { return leaveTypeRepository.findById(id).orElse(null); }
 }
