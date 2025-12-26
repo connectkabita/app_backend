@@ -6,10 +6,8 @@ import {
   deleteEmployee,
   getActiveEmployeeStats,
 } from "../../api/employeeApi";
-
 import { getDepartments } from "../../api/departmentApi";
 import { getDesignations } from "../../api/designationApi";
-
 import ConfirmModal from "../../components/ConfirmModal";
 import "./Employees.css";
 
@@ -17,15 +15,15 @@ export default function Employees() {
   const [employees, setEmployees] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [designations, setDesignations] = useState([]);
-
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({});
   const [addingNew, setAddingNew] = useState(false);
   const [searchId, setSearchId] = useState("");
   const [activeStats, setActiveStats] = useState({});
-
   const [showConfirm, setShowConfirm] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
+  const [errorMsg, setErrorMsg] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
 
   useEffect(() => {
     fetchEmployees();
@@ -80,12 +78,16 @@ export default function Employees() {
       deptId: emp.department?.deptId,
       designationId: emp.position?.designationId,
     });
+    setErrorMsg("");
+    setSuccessMsg("");
   };
 
   const cancelEdit = () => {
     setEditingId(null);
     setFormData({});
     setAddingNew(false);
+    setErrorMsg("");
+    setSuccessMsg("");
   };
 
   const saveEdit = async (id) => {
@@ -96,10 +98,15 @@ export default function Employees() {
         position: { designationId: formData.designationId },
       };
 
+      setErrorMsg("");
+      setSuccessMsg("");
+
       if (addingNew) {
         await createEmployee(payload);
+        setSuccessMsg("Employee successfully created!");
       } else {
         await updateEmployee(id, payload);
+        setSuccessMsg("Employee successfully updated!");
       }
 
       fetchEmployees();
@@ -107,18 +114,25 @@ export default function Employees() {
       cancelEdit();
     } catch (err) {
       console.error(err);
+      if (err.response && err.response.data && err.response.data.message) {
+        setErrorMsg(err.response.data.message);
+      } else {
+        setErrorMsg("An error occurred. Please try again.");
+      }
     }
   };
 
-  // Modal-based delete
   const handleDeleteClick = (id) => {
     setDeleteId(id);
     setShowConfirm(true);
+    setErrorMsg("");
+    setSuccessMsg("");
   };
 
   const confirmDelete = async () => {
     try {
       await deleteEmployee(deleteId);
+      setSuccessMsg("Employee successfully deleted!");
       fetchEmployees();
       fetchActiveStats();
     } catch (err) {
@@ -146,6 +160,9 @@ export default function Employees() {
     <>
       <h1>Employees</h1>
 
+      {errorMsg && <div className="error-message">{errorMsg}</div>}
+      {successMsg && <div className="success-message">{successMsg}</div>}
+
       <div className="search-container">
         <input
           type="number"
@@ -172,6 +189,8 @@ export default function Employees() {
         onClick={() => {
           setAddingNew(true);
           setFormData({});
+          setErrorMsg("");
+          setSuccessMsg("");
         }}
       >
         Add New Employee
@@ -208,8 +227,6 @@ export default function Employees() {
                 <td><input name="email" value={formData.email || ""} onChange={handleChange} /></td>
                 <td><input name="contact" value={formData.contact || ""} onChange={handleChange} /></td>
                 <td><input name="maritalStatus" value={formData.maritalStatus || ""} onChange={handleChange} /></td>
-
-                {/* Designation Dropdown */}
                 <td>
                   <select name="designationId" value={formData.designationId || ""} onChange={handleChange}>
                     <option value="">Select Designation</option>
@@ -218,13 +235,10 @@ export default function Employees() {
                     ))}
                   </select>
                 </td>
-
                 <td><input name="education" value={formData.education || ""} onChange={handleChange} /></td>
                 <td><input name="employmentStatus" value={formData.employmentStatus || ""} onChange={handleChange} /></td>
                 <td><input type="date" name="joiningDate" value={formData.joiningDate || ""} onChange={handleChange} /></td>
                 <td><input name="address" value={formData.address || ""} onChange={handleChange} /></td>
-
-                {/* Department Dropdown */}
                 <td>
                   <select name="deptId" value={formData.deptId || ""} onChange={handleChange}>
                     <option value="">Select Department</option>
@@ -233,7 +247,6 @@ export default function Employees() {
                     ))}
                   </select>
                 </td>
-
                 <td><input type="checkbox" name="isActive" checked={formData.isActive || false} onChange={handleChange} /></td>
                 <td>Auto</td>
                 <td>
@@ -252,8 +265,6 @@ export default function Employees() {
                 <td>{editingId === emp.empId ? <input name="email" value={formData.email} onChange={handleChange} /> : emp.email}</td>
                 <td>{editingId === emp.empId ? <input name="contact" value={formData.contact} onChange={handleChange} /> : emp.contact}</td>
                 <td>{editingId === emp.empId ? <input name="maritalStatus" value={formData.maritalStatus} onChange={handleChange} /> : emp.maritalStatus}</td>
-
-                {/* Designation Dropdown for Update */}
                 <td>
                   {editingId === emp.empId ? (
                     <select name="designationId" value={formData.designationId || ""} onChange={handleChange}>
@@ -266,13 +277,10 @@ export default function Employees() {
                     emp.position?.designationTitle
                   )}
                 </td>
-
                 <td>{editingId === emp.empId ? <input name="education" value={formData.education} onChange={handleChange} /> : emp.education}</td>
                 <td>{editingId === emp.empId ? <input name="employmentStatus" value={formData.employmentStatus} onChange={handleChange} /> : emp.employmentStatus}</td>
                 <td>{editingId === emp.empId ? <input type="date" name="joiningDate" value={formData.joiningDate} onChange={handleChange} /> : emp.joiningDate}</td>
                 <td>{editingId === emp.empId ? <input name="address" value={formData.address} onChange={handleChange} /> : emp.address}</td>
-
-                {/* Department Dropdown for Update */}
                 <td>
                   {editingId === emp.empId ? (
                     <select name="deptId" value={formData.deptId || ""} onChange={handleChange}>
@@ -285,7 +293,6 @@ export default function Employees() {
                     emp.department?.deptName
                   )}
                 </td>
-
                 <td>{editingId === emp.empId ? <input type="checkbox" name="isActive" checked={formData.isActive} onChange={handleChange} /> : emp.isActive ? "Yes" : "No"}</td>
                 <td>{emp.createdAt}</td>
                 <td>
@@ -307,7 +314,6 @@ export default function Employees() {
         </table>
       </div>
 
-      {/* Confirmation Modal */}
       <ConfirmModal
         show={showConfirm}
         message="Are you sure you want to delete this employee?"
