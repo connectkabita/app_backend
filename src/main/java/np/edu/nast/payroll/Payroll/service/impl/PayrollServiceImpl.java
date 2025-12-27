@@ -28,38 +28,37 @@ public class PayrollServiceImpl implements PayrollService {
 
     @Override
     @Transactional
+    public Payroll updateStatus(Integer id, String newStatus) {
+        Payroll payroll = payrollRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Payroll record not found with id: " + id));
+        payroll.setStatus(newStatus);
+        return payrollRepo.save(payroll);
+    }
+
+    @Override
+    @Transactional
     public Payroll processPayrollRequest(PayrollRequest request) {
-        // 1. Fetch the Employee
         var employee = employeeRepo.findById(request.getEmpId())
-                .orElseThrow(() -> new RuntimeException("Employee ID " + request.getEmpId() + " not found."));
+                .orElseThrow(() -> new RuntimeException("Employee ID not found."));
 
         Payroll payroll = new Payroll();
         payroll.setEmployee(employee);
 
-        // 2. Set Pay Group - Dynamic with fallback to ID 1
         Integer pGroupId = (request.getPayGroupId() != null) ? request.getPayGroupId() : 1;
-        var payGroup = payGroupRepo.findById(pGroupId)
-                .orElseThrow(() -> new RuntimeException("Pay Group ID " + pGroupId + " not found."));
+        var payGroup = payGroupRepo.findById(pGroupId).orElseThrow();
         payroll.setPayGroup(payGroup);
 
-        // 3. Set Bank Account - Dynamic with fallback to ID 1
         Integer accId = (request.getAccountId() != null) ? request.getAccountId() : 1;
-        var account = bankAccountRepo.findById(accId)
-                .orElseThrow(() -> new RuntimeException("Bank Account ID " + accId + " not found."));
+        var account = bankAccountRepo.findById(accId).orElseThrow();
         payroll.setPaymentAccount(account);
 
-        // 4. Set Payment Method - Dynamic with fallback to ID 1
         Integer methodId = (request.getPaymentMethodId() != null) ? request.getPaymentMethodId() : 1;
-        var method = paymentMethodRepo.findById(methodId)
-                .orElseThrow(() -> new RuntimeException("Payment Method ID " + methodId + " not found."));
+        var method = paymentMethodRepo.findById(methodId).orElseThrow();
         payroll.setPaymentMethod(method);
 
-        // 5. Set ProcessedBy - Fixed to your Admin User ID 6
-        var adminUser = userRepo.findById(6)
-                .orElseThrow(() -> new RuntimeException("Admin User ID 6 not found."));
+        var adminUser = userRepo.findById(6).orElseThrow();
         payroll.setProcessedBy(adminUser);
 
-        // 6. Set Financial Data
         payroll.setGrossSalary(request.getGrossSalary() != null ? request.getGrossSalary() : 0.0);
         payroll.setTotalAllowances(request.getTotalAllowances() != null ? request.getTotalAllowances() : 0.0);
         payroll.setTotalDeductions(request.getTotalDeductions() != null ? request.getTotalDeductions() : 0.0);
@@ -71,8 +70,6 @@ public class PayrollServiceImpl implements PayrollService {
         double gross = payroll.getGrossSalary();
         double allow = payroll.getTotalAllowances();
         double deduct = payroll.getTotalDeductions();
-
-        // 1% Social Security Tax calculation
         double tax = (gross + allow) * 0.01;
         double net = (gross + allow) - (deduct + tax);
 
@@ -80,8 +77,6 @@ public class PayrollServiceImpl implements PayrollService {
         payroll.setNetSalary(net);
         payroll.setStatus("PROCESSED");
         payroll.setProcessedAt(LocalDateTime.now());
-
-        // Use LocalDate for period dates to fix IDE errors
         payroll.setPayPeriodStart(LocalDate.now().withDayOfMonth(1));
         payroll.setPayPeriodEnd(LocalDate.now());
         payroll.setPayDate(LocalDate.now());

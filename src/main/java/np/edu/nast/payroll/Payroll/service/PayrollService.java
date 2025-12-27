@@ -7,10 +7,12 @@ import java.util.List;
 public interface PayrollService {
     List<Payroll> getAllPayrolls();
     Payroll savePayroll(Payroll payroll);
-
-    // Fixes the "@Override" error in image_1f2b5d.jpg
     Payroll processPayrollRequest(PayrollRequest request);
 
+    // Updated to Integer to match Implementation and Repo
     Payroll getPayrollById(Integer id);
     void deletePayroll(Integer id);
+
+    // NEW: The method required by the Controller
+    Payroll updateStatus(Integer id, String newStatus);
 }

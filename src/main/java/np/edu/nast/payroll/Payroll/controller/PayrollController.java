@@ -1,11 +1,12 @@
 package np.edu.nast.payroll.Payroll.controller;
 
-import np.edu.nast.payroll.Payroll.dto.auth.PayrollRequest;
 import np.edu.nast.payroll.Payroll.entity.Payroll;
 import np.edu.nast.payroll.Payroll.service.PayrollService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/payrolls")
@@ -20,9 +21,10 @@ public class PayrollController {
         return payrollService.getAllPayrolls();
     }
 
-    @PostMapping
-    public Payroll create(@RequestBody PayrollRequest request) {
-        // This links the frontend form to the logic that searches for Employee ID 8
-        return payrollService.processPayrollRequest(request);
+    @PutMapping("/{id}/status")
+    public ResponseEntity<Payroll> updateStatus(@PathVariable Integer id, @RequestBody Map<String, String> statusUpdate) {
+        String newStatus = statusUpdate.get("status");
+        Payroll updatedPayroll = payrollService.updateStatus(id, newStatus);
+        return ResponseEntity.ok(updatedPayroll);
     }
 }
