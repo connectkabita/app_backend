@@ -1,19 +1,21 @@
+/* --- Container and Layout --- */
 .tax-page-container {
   padding: 3rem;
-  background-color: #f1f5f9; /* Soft background to make white cards pop */
+  background-color: #f1f5f9;
   min-height: 100vh;
+  font-family: 'Inter', sans-serif;
 }
 
 .tax-header-section {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2.5rem;
+  margin-bottom: 2rem;
 }
 
 .tax-title {
   font-size: 2.2rem;
-  color: #0f172a; /* High contrast black/slate */
+  color: #0f172a;
   font-weight: 800;
   margin: 0;
 }
@@ -24,38 +26,57 @@
   margin-top: 4px;
 }
 
-.btn-update-reg {
-  background: #4f46e5;
-  color: white;
-  border: none;
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-weight: 700;
-  cursor: pointer;
-  box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3);
+/* --- Filter Tabs Logic --- */
+.filter-tab-container {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 25px;
+  background: #e2e8f0;
+  padding: 6px;
+  border-radius: 12px;
+  width: fit-content;
 }
 
-/* The Professional Card */
+.tab-btn {
+  padding: 10px 24px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 14px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: transparent;
+  color: #64748b;
+}
+
+.tab-btn.active {
+  background: #ffffff;
+  color: #4f46e5;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* --- Main Data Card --- */
 .tax-data-card {
   background: white;
   border-radius: 16px;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
   overflow: hidden;
   border: 1px solid #e2e8f0;
 }
 
-.card-top-bar {
-  padding: 1.5rem 2rem;
-  border-bottom: 1px solid #f1f5f9;
+.card-header-flex {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid #f1f5f9;
 }
 
-.card-top-bar h3 {
+.card-header-flex h3 {
   margin: 0;
   color: #1e293b;
   font-weight: 700;
+  font-size: 1.25rem;
 }
 
 .last-sync {
@@ -64,31 +85,47 @@
   font-weight: 600;
 }
 
-/* Professional Table Styling */
+/* --- Professional Table --- */
+.table-responsive-wrapper {
+  overflow-x: auto;
+}
+
 .tax-professional-table {
   width: 100%;
   border-collapse: collapse;
 }
 
 .tax-professional-table th {
-  background: #0f172a; /* Dark Professional Header */
-  color: white;
+  background: #0f172a;
+  color: #f8fafc;
   padding: 1.2rem 2rem;
   text-align: left;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  font-weight: 700;
 }
 
 .tax-professional-table td {
-  padding: 1.5rem 2rem;
+  padding: 1.2rem 2rem;
   border-bottom: 1px solid #f1f5f9;
   color: #475569;
+  font-size: 0.95rem;
 }
 
+.tax-professional-table tr:hover {
+  background-color: #f8fafc;
+}
+
+/* --- Typography and UI Accents --- */
 .text-bold-slate {
   font-weight: 700;
   color: #1e293b;
+}
+
+.text-muted {
+  color: #94a3b8;
+  font-family: monospace;
 }
 
 .rate-pill-indigo {
@@ -102,4 +139,165 @@
 .status-dot-green {
   color: #059669;
   font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* --- Status Pills (Single vs Couple) --- */
+.pill-single {
+  background: #e0f2fe;
+  color: #0369a1;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: inline-block;
+}
+
+.pill-couple {
+  background: #fef3c7;
+  color: #92400e;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: inline-block;
+}
+
+.no-data {
+  text-align: center;
+  padding: 3rem;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+/* --- Buttons --- */
+.btn-update-reg {
+  background: #4f46e5;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3);
+  transition: all 0.2s ease;
+}
+
+.btn-update-reg:hover {
+  background: #4338ca;
+  transform: translateY(-1px);
+}
+
+/* --- Modal Styling --- */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  padding: 2rem;
+  border-radius: 20px;
+  width: 550px;
+  max-width: 95%;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  animation: modalPop 0.3s ease-out;
+}
+
+@keyframes modalPop {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.modal-content h3 {
+  margin: 0 0 1.5rem 0;
+  color: #0f172a;
+  font-size: 1.4rem;
+  border-bottom: 1px solid #f1f5f9;
+  padding-bottom: 1rem;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.2rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-group label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.modal-content input, 
+.modal-content select,
+.modal-content textarea {
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  background: #ffffff;
+}
+
+.modal-content input:focus, 
+.modal-content select:focus,
+.modal-content textarea:focus {
+  outline: none;
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.modal-content textarea {
+  grid-column: span 2;
+  height: 80px;
+  resize: none;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.btn-cancel {
+  background: #f8fafc;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-save {
+  background: #0f172a;
+  color: white;
+  border: none;
+  padding: 10px 25px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-save:hover {
+  background: #1e293b;
 }
