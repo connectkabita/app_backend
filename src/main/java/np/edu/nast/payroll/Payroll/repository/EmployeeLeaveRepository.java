@@ -8,4 +8,7 @@ import java.util.List;
 @Repository
 public interface EmployeeLeaveRepository extends JpaRepository<EmployeeLeave, Integer> {
     List<EmployeeLeave> findByEmployeeEmpId(Integer empId);
+
+    // ADD THIS NEW LINE TO RESOLVE THE ERROR
+    long countByStatus(String status);
 }
