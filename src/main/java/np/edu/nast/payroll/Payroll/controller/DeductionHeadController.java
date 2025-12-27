@@ -9,6 +9,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/deduction-heads")
+@CrossOrigin(origins = "http://localhost:5173")
 public class DeductionHeadController {
 
     @Autowired

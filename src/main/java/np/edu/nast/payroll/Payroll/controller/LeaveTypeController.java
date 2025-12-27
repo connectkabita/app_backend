@@ -7,6 +7,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/leave-types")
+@CrossOrigin(origins = "http://localhost:5173")
 public class LeaveTypeController {
 
     private final LeaveTypeService leaveTypeService;

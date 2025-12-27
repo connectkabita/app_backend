@@ -47,7 +47,7 @@ public class EmployeeLeave {
     private LocalDateTime requestedAt;
 
     // The User who approved the request
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "approved_by_user_id", nullable = true)
     private User approvedBy;
 

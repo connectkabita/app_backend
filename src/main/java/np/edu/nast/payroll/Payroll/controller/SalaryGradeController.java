@@ -8,6 +8,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/salary-grades")
+@CrossOrigin(origins = "http://localhost:5173")
 public class SalaryGradeController {
 
     private final SalaryGradeService service;
