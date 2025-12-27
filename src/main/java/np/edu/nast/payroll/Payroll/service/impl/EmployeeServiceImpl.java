@@ -3,6 +3,7 @@ package np.edu.nast.payroll.Payroll.service.impl;
 import np.edu.nast.payroll.Payroll.entity.Employee;
 import np.edu.nast.payroll.Payroll.entity.Department;
 import np.edu.nast.payroll.Payroll.entity.Designation;
+import np.edu.nast.payroll.Payroll.exception.EmailAlreadyExistsException;
 import np.edu.nast.payroll.Payroll.repository.EmployeeRepository;
 import np.edu.nast.payroll.Payroll.repository.DepartmentRepository;
 import np.edu.nast.payroll.Payroll.repository.DesignationRepository;
@@ -33,6 +34,11 @@ public class EmployeeServiceImpl implements EmployeeService {
        ========================= */
     @Override
     public Employee create(Employee employee) {
+
+        // EMAIL UNIQUENESS CHECK
+        if (employeeRepo.existsByEmail(employee.getEmail())) {
+            throw new EmailAlreadyExistsException("Email already exists");
+        }
 
         // FK NULL CHECK
         if (employee.getDepartment() == null || employee.getDepartment().getDeptId() == null) {
@@ -68,6 +74,13 @@ public class EmployeeServiceImpl implements EmployeeService {
         Employee existing = employeeRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Employee not found with id: " + id));
 
+        // EMAIL UNIQUENESS CHECK (ALLOW SAME EMPLOYEE)
+        if (employee.getEmail() != null &&
+                !employee.getEmail().equals(existing.getEmail()) &&
+                employeeRepo.existsByEmail(employee.getEmail())) {
+            throw new EmailAlreadyExistsException("Email already exists");
+        }
+
         // FK NULL CHECK
         if (employee.getDepartment() == null || employee.getDepartment().getDeptId() == null ||
                 employee.getPosition() == null || employee.getPosition().getDesignationId() == null) {
@@ -99,10 +112,9 @@ public class EmployeeServiceImpl implements EmployeeService {
         existing.setIsActive(employee.getIsActive());
 
         // EMAIL = SOURCE OF TRUTH
-        if (employee.getEmail() != null && !employee.getEmail().equals(existing.getEmail())) {
+        if (employee.getEmail() != null) {
             existing.setEmail(employee.getEmail());
 
-            // Sync user email via entity relationship (no repository call)
             if (existing.getUser() != null) {
                 existing.getUser().setEmail(employee.getEmail());
             }
@@ -116,11 +128,8 @@ public class EmployeeServiceImpl implements EmployeeService {
        ========================= */
     @Override
     public void delete(Integer id) {
-
         Employee employee = employeeRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Employee not found with id: " + id));
-
-        // Cascade + orphanRemoval deletes User automatically
         employeeRepo.delete(employee);
     }
 
@@ -142,7 +151,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     /* =========================
-       ACTIVE EMPLOYEE STATS PER MONTH
+       ACTIVE EMPLOYEE STATS
        ========================= */
     @Override
     public Map<Integer, Long> getActiveEmployeeStats() {

@@ -15,4 +15,5 @@ public interface EmployeeRepository extends JpaRepository<Employee, Integer> {
             "WHERE e.isActive = true " +
             "GROUP BY FUNCTION('MONTH', e.joiningDate)")
     List<Object[]> countActiveEmployeesPerMonth();
+    boolean existsByEmail(String email);
 }
