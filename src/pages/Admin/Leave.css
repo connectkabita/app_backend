@@ -1,102 +1,118 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 :root {
-  --primary-blue: #2563eb;
-  --dark-blue: #1e40af;
-  --light-blue: #eff6ff;
-  --border-color: #e2e8f0;
+  --primary-blue: #1e40af;
+  --accent-blue: #3b82f6;
+  --bg-gray: #f8fafc;
+  --text-main: #1e293b;
+  --text-muted: #64748b;
+  --success-green: #10b981;
   --danger-red: #ef4444;
+  --border-light: #e2e8f0;
 }
 
 .leave-container {
-  padding: 2rem;
+  padding: 1.5rem 2rem; /* Reduced padding to fit screen better */
+  background-color: var(--bg-gray);
+  min-height: 100vh;
   font-family: 'Inter', sans-serif;
 }
 
 .leave-header {
-  color: var(--dark-blue);
-  font-size: 24px;
-  margin-bottom: 20px;
+  color: var(--text-main);
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  display: inline-block;
+  border-left: 4px solid var(--primary-blue);
+  padding-left: 12px;
 }
 
+/* Modern Table Layout */
 .leave-table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   background: white;
-  border-radius: 10px;
+  border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--border-light);
 }
 
 .leave-table th {
-  background-color: var(--primary-blue);
-  color: white;
-  padding: 15px;
+  background-color: #f8fafc;
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 0.7rem; /* Smaller for better fit */
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 1rem 0.75rem; /* Tighter padding */
   text-align: left;
+  border-bottom: 1px solid var(--border-light);
 }
 
 .leave-table td {
-  padding: 15px;
-  border-bottom: 1px solid var(--border-color);
+  padding: 0.85rem 0.75rem; /* Reduced padding to eliminate scrollbar */
+  color: var(--text-main);
+  font-size: 0.8rem; /* Professional data size */
+  border-bottom: 1px solid var(--border-light);
+  vertical-align: middle;
 }
 
-.total-cell {
-  font-weight: bold;
-  color: var(--primary-blue);
-}
-
-/* Status Badges */
-.status-badge {
-  padding: 5px 12px;
-  border-radius: 15px;
-  font-size: 13px;
+/* Optimized Date Range Column */
+.leave-table td:nth-child(4) {
+  white-space: nowrap;
+  min-width: 175px; /* Tuned to prevent scrollbar while staying side-by-side */
   font-weight: 500;
 }
 
-.status-badge.pending { background: #fff7ed; color: #c2410c; }
-.status-badge.approved { background: #dcfce7; color: #15803d; }
-.status-badge.rejected { background: #fee2e2; color: #b91c1c; }
+/* Status Badges - Clean Pill Style */
+.status-badge {
+  padding: 0.25rem 0.6rem;
+  border-radius: 9999px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  display: inline-block;
+}
+
+.status-badge.approved { background: #d1fae5; color: #065f46; }
+.status-badge.rejected { background: #fee2e2; color: #991b1b; }
+.status-badge.pending { background: #fef3c7; color: #92400e; }
+
+/* Highlight Column */
+.remaining-cell {
+  background-color: #f0f7ff;
+  color: var(--primary-blue) !important;
+  text-align: center;
+  font-weight: 700 !important;
+}
 
 /* Buttons */
-.btn-group {
-  display: flex;
-  gap: 10px;
+.btn-approve, .btn-reject {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.4rem 0.75rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
 .btn-approve {
   background: var(--primary-blue);
   color: white;
   border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  cursor: pointer;
 }
 
 .btn-reject {
   background: white;
   color: var(--danger-red);
   border: 1px solid var(--danger-red);
-  padding: 8px 16px;
-  border-radius: 6px;
-  cursor: pointer;
 }
-
-.btn-approve:hover { background: var(--dark-blue); }
-.btn-reject:hover { background: var(--danger-red); color: white; }
 
 .text-final {
-  font-weight: bold;
-  text-transform: uppercase;
-  font-size: 12px;
-}
-.text-final.approved { color: var(--primary-blue); }
-.text-final.rejected { color: var(--danger-red); }
-.remaining-cell {
   font-weight: 700;
-  color: #1e40af; /* Primary Blue */
-  background-color: #f0f9ff;
-  text-align: center;
-}
-
-.text-final.approved {
-  color: #1e40af; /* Blue theme as requested */
-  font-weight: bold;
+  font-size: 0.7rem;
+  text-transform: uppercase;
 }

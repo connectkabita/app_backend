@@ -70,7 +70,7 @@ const LeaveAdmin = () => {
 
   return (
     <div className="leave-container">
-      <h2 className="leave-header">Employee Leave Management (Nepal Standards)</h2>
+      <h2 className="leave-header">Employee Leave Management</h2>
       <table className="leave-table">
         <thead>
           <tr>
@@ -97,7 +97,9 @@ const LeaveAdmin = () => {
                 <td>{leave.leaveId}</td>
                 <td>{leave.emp_name}</td>
                 <td>{leave.leave_type_name}</td>
-                <td>{leave.startDate} to {leave.endDate}</td>
+               <td>{leave.startDate} <span className="date-separator">to
+                </span> {leave.endDate}
+                </td>
                 <td>{leave.totalDays} Days</td>
                 <td>
                   <span className={`status-badge ${(leave.status || 'pending').toLowerCase()}`}>
