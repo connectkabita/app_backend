@@ -9,6 +9,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/paygroups")
+@CrossOrigin(origins = "http://localhost:5173")
 public class PayGroupController {
 
     @Autowired

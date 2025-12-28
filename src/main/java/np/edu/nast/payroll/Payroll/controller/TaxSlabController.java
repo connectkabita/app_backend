@@ -8,6 +8,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/tax-slabs")
+@CrossOrigin(origins = "http://localhost:5173")
 public class TaxSlabController {
 
     private final TaxSlabService service;
