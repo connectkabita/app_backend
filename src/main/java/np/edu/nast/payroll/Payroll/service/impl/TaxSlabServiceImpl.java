@@ -33,6 +33,7 @@ public class TaxSlabServiceImpl implements TaxSlabService {
         existing.setEffectiveFrom(slab.getEffectiveFrom());
         existing.setEffectiveTo(slab.getEffectiveTo());
         existing.setDescription(slab.getDescription());
+        existing.setTaxpayerStatus(slab.getTaxpayerStatus()); // Map the new field
 
         return repo.save(existing);
     }

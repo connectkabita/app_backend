@@ -33,23 +33,22 @@ public class Payroll {
     @JoinColumn(name = "processed_by", nullable = false)
     private User processedBy;
 
-    // Renamed to match the account_id column we fixed in bank_account
+    /* =========================================================
+       FIX: Changed "account_id" to "payment_account_id"
+       to match your MySQL table's mandatory column name.
+       ========================================================= */
     @ManyToOne(fetch = FetchType.EAGER, optional = false)
-    @JoinColumn(name = "account_id", nullable = false)
+    @JoinColumn(name = "payment_account_id", nullable = false)
     private BankAccount paymentAccount;
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "pay_group_id", nullable = true) // Relaxed for migration
+    @JoinColumn(name = "pay_group_id", nullable = true)
     private PayGroup payGroup;
 
     @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "payment_method_id", nullable = false)
     private PaymentMethod paymentMethod;
 
-    /* =========================
-       PAY PERIOD INFORMATION
-       Relaxed to nullable = true temporarily to fix DDL errors
-       ========================= */
     @Column(nullable = true)
     private LocalDate payPeriodStart;
 
@@ -77,7 +76,7 @@ public class Payroll {
     @Column(nullable = false, length = 20)
     private String status;
 
-    @Builder.Default // Ensures Lombok builder doesn't nullify this
+    @Builder.Default
     @Column(nullable = false, updatable = false)
     private LocalDateTime processedAt = LocalDateTime.now();
 

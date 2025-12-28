@@ -53,6 +53,15 @@ public class Employee {
     @Column(nullable = false)
     private String address;
 
+    @Column(nullable = false)
+    private Double basicSalary; // Add this
+
+    @Column(nullable = false)
+    private Double allowances; // Add this
+
+    @Column(nullable = false)
+    private Double deductions; // Add this
+
     @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "dept_id", nullable = false)
     private Department department;
