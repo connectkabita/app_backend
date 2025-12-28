@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Eye, EyeOff } from "lucide-react"; // Import icons
 
 export default function AdminLogin({ setUser }) {
   const [usernameOrEmail, setUsernameOrEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false); // Toggle state
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -24,7 +26,6 @@ export default function AdminLogin({ setUser }) {
       const data = await response.json();
 
       if (response.ok && data.userId) {
-        // ✅ CRITICAL: Match the key "user_session" used in your App.jsx
         const adminSession = { 
           userId: data.userId, 
           role: data.role || "admin", 
@@ -59,28 +60,51 @@ export default function AdminLogin({ setUser }) {
             <label>Admin Email or Username</label>
             <input
               type="text"
-              placeholder="admin_user"
+              placeholder="Enter your email or username"
               value={usernameOrEmail}
               onChange={(e) => setUsernameOrEmail(e.target.value)}
               required
             />
           </div>
+
           <div className="form-group">
             <label>Password</label>
-            <input
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
+            <div className="password-wrapper" style={{ position: "relative" }}>
+              <input
+                type={showPassword ? "text" : "password"} // Dynamic type
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                style={{ width: "100%", paddingRight: "40px" }}
+              />
+              <button
+                type="button"
+                className="password-toggle-btn"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{
+                  position: "absolute",
+                  right: "10px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "#666",
+                  display: "flex",
+                  alignItems: "center"
+                }}
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
           </div>
+
           <button type="submit" className="btn-primary" disabled={loading}>
             {loading ? "Signing In..." : "Sign In"}
           </button>
         </form>
 
-        {/* ✅ RESTORED FORGOT PASSWORD SECTION */}
         <div className="auth-footer">
           <button onClick={() => navigate("/")} className="btn-text">
             ← Back to Portal

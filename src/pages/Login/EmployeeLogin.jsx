@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom"; 
-import api from "../../api/axios"; // Make sure path matches your project
+import api from "../../api/axios"; 
+import { Eye, EyeOff } from "lucide-react"; // Import Icons
 import "./login.css"; 
 
 export default function EmployeeLogin({ setUser }) {
@@ -11,42 +12,33 @@ export default function EmployeeLogin({ setUser }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     try {
-      if (!email.trim() || !password.trim()) {
+      const trimmedEmail = email.trim();
+      const trimmedPassword = password.trim();
+
+      if (!trimmedEmail || !trimmedPassword) {
         alert("Please enter email/username and password");
         return;
       }
 
-      const payload = {
-        usernameOrEmail: email.trim(),
-        password: password.trim(),
-        role: "Employee" // Role sent to backend for validation
+      const loginPayload = {
+        usernameOrEmail: trimmedEmail,
+        password: trimmedPassword,
+        role: "Employee"
       };
 
-      const response = await api.post("/auth/login", payload);
+      const response = await api.post("/auth/login", loginPayload, {
+        headers: { 'Content-Type': 'application/json' }
+      });
 
-      // Validate role on frontend (backend already checks role)
-      if (response.data.role.toUpperCase() !== "EMPLOYEE") {
-        alert("Unauthorized role for employee portal");
-        return;
-      }
-
-      // Save session
       localStorage.setItem("user_session", JSON.stringify(response.data));
       setUser(response.data);
-
-      // Redirect to employee dashboard
       navigate("/employee/dashboard"); 
 
     } catch (err) {
       console.error("Employee login error:", err);
-
-      if (err.response && err.response.data) {
-        alert(err.response.data.message || "Something went wrong");
-      } else {
-        alert("Something went wrong. Please check backend or network");
-      }
+      const serverMessage = err.response?.data?.message || "Connection to server failed";
+      alert(serverMessage);
     }
   };
 
@@ -73,26 +65,33 @@ export default function EmployeeLogin({ setUser }) {
 
           <div className="form-group" style={{ position: "relative" }}>
             <label>Password</label>
-            <input
-              type={showPassword ? "text" : "password"}
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              style={{ paddingRight: "30px" }}
-            />
-            <span
-              onClick={() => setShowPassword(!showPassword)}
-              style={{
-                position: "absolute",
-                right: "10px",
-                top: "35px",
-                cursor: "pointer",
-                userSelect: "none"
-              }}
-            >
-              {showPassword ? "👁️‍🗨️" : "👁️"}
-            </span>
+            <div style={{ position: "relative" }}>
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                style={{ width: "100%", paddingRight: "40px" }}
+              />
+              <button
+                type="button" // Important: prevents form submission
+                onClick={() => setShowPassword(!showPassword)}
+                style={{
+                  position: "absolute",
+                  right: "10px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "#666",
+                  display: "flex"
+                }}
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
           </div>
 
           <button type="submit" className="btn-primary" style={{ backgroundColor: '#059669' }}>
@@ -104,7 +103,9 @@ export default function EmployeeLogin({ setUser }) {
           <button onClick={() => navigate("/")} className="btn-text">
             ← Back to Landing Page
           </button>
-          <a href="/employee/forgot-password">Forgot Password?</a>
+          <button onClick={() => navigate("/employee/forgot-password")} className="btn-text">
+            Forgot Password?
+          </button>
         </div>
       </div>
     </div>

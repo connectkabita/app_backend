@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../api/axios"; 
+import { Eye, EyeOff } from "lucide-react"; // Import Icons
 import "./login.css";
 
 export default function AccountantLogin({ setUser }) {
@@ -11,7 +12,6 @@ export default function AccountantLogin({ setUser }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     try {
       const payload = {
         usernameOrEmail: email.trim(),
@@ -20,13 +20,11 @@ export default function AccountantLogin({ setUser }) {
 
       const response = await api.post("/auth/login", payload);
 
-      // ✅ Ensure the role matches the "accountant" string in App.jsx
       if (response.data.role.toLowerCase() !== "accountant") {
         alert("Unauthorized role for accountant portal");
         return;
       }
 
-      // ✅ CRITICAL: Match the key "user_session" used in your App.jsx
       const sessionData = {
         userId: response.data.userId,
         role: response.data.role,
@@ -67,19 +65,33 @@ export default function AccountantLogin({ setUser }) {
 
           <div className="form-group" style={{ position: "relative" }}>
             <label>Password</label>
-            <input
-              type={showPassword ? "text" : "password"}
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-            <span
-              onClick={() => setShowPassword(!showPassword)}
-              style={{ position: "absolute", right: "10px", top: "35px", cursor: "pointer" }}
-            >
-              {showPassword ? "👁️‍🗨️" : "👁️"}
-            </span>
+            <div style={{ position: "relative" }}>
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                style={{ width: "100%", paddingRight: "40px" }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{
+                  position: "absolute",
+                  right: "10px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "#666",
+                  display: "flex"
+                }}
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
           </div>
 
           <button type="submit" className="btn-primary">
@@ -87,7 +99,6 @@ export default function AccountantLogin({ setUser }) {
           </button>
         </form>
 
-        {/* ✅ RESTORED FORGOT PASSWORD SECTION */}
         <div className="auth-footer">
           <button onClick={() => navigate("/")} className="btn-text">
             ← Back to Landing Page
