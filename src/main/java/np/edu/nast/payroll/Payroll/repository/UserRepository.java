@@ -5,10 +5,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 
 public interface UserRepository extends JpaRepository<User, Integer> {
-    // Required for login logic
-    Optional<User> findByUsernameOrEmail(String username, String email);
+    Optional<User> findByUsername(String username);
 
-    // Required for forgot password and reset token logic
-    Optional<User> findByEmail(String email);
-    Optional<User> findByResetToken(String token);
+    // Needed for Forgot Password
+    Optional<User> findByEmailIgnoreCase(String email);
+
+    // Needed for Reset Password
+    Optional<User> findByResetToken(String resetToken);
 }

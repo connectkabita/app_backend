@@ -3,9 +3,9 @@ package np.edu.nast.payroll.Payroll.controller;
 import np.edu.nast.payroll.Payroll.dto.auth.LoginRequestDTO;
 import np.edu.nast.payroll.Payroll.dto.auth.LoginResponseDTO;
 import np.edu.nast.payroll.Payroll.service.AuthService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-@CrossOrigin(origins = "http://localhost:5173") // Allow frontend port
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
@@ -17,7 +17,9 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public LoginResponseDTO login(@RequestBody LoginRequestDTO request) {
-        return authService.adminLogin(request);
+    public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginRequestDTO request) {
+        // Correct the method name here to match the service
+        LoginResponseDTO response = authService.authenticateUser(request);
+        return ResponseEntity.ok(response);
     }
 }
