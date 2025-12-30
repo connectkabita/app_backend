@@ -54,13 +54,13 @@ public class Employee {
     private String address;
 
     @Column(nullable = false)
-    private Double basicSalary; // Add this
+    private Double basicSalary;
 
     @Column(nullable = false)
-    private Double allowances; // Add this
+    private Double allowances;
 
     @Column(nullable = false)
-    private Double deductions; // Add this
+    private Double deductions;
 
     @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "dept_id", nullable = false)
@@ -81,12 +81,32 @@ public class Employee {
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    /**
+     * This method runs before the data is saved to the database.
+     * It prevents "null property" errors by providing default values.
+     */
     @PrePersist
     public void onCreate() {
         this.createdAt = LocalDateTime.now();
+
+        // Default values for mandatory fields to prevent persistence errors
         if (this.isActive == null) {
             this.isActive = true;
         }
+        if (this.maritalStatus == null) {
+            this.maritalStatus = "SINGLE";
+        }
+        if (this.employmentStatus == null) {
+            this.employmentStatus = "FULL_TIME";
+        }
+        if (this.basicSalary == null) {
+            this.basicSalary = 0.0;
+        }
+        if (this.allowances == null) {
+            this.allowances = 0.0;
+        }
+        if (this.deductions == null) {
+            this.deductions = 0.0;
+        }
     }
-
 }

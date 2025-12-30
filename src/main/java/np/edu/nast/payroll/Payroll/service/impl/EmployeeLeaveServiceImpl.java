@@ -103,7 +103,6 @@ public class EmployeeLeaveServiceImpl implements EmployeeLeaveService {
     public List<EmployeeLeave> getLeavesByEmployee(Integer empId) {
         Employee employee = employeeRepo.findById(empId)
                 .orElseThrow(() -> new IllegalArgumentException("Employee not found with ID: " + empId));
-
         return employeeLeaveRepo.findAllByEmployee(employee);
     }
 
@@ -145,13 +144,11 @@ public class EmployeeLeaveServiceImpl implements EmployeeLeaveService {
         existingLeave.setReason(leave.getReason());
         existingLeave.setStatus(leave.getStatus());
 
-        // Update ApprovedBy status
+        // Update ApprovedBy if necessary
         if (leave.getApprovedBy() != null && leave.getApprovedBy().getUserId() != null) {
             User approvedBy = userRepo.findById(leave.getApprovedBy().getUserId())
                     .orElseThrow(() -> new IllegalArgumentException("Approved By User not found with ID: " + leave.getApprovedBy().getUserId()));
             existingLeave.setApprovedBy(approvedBy);
-        } else {
-            existingLeave.setApprovedBy(null);
         }
 
         return employeeLeaveRepo.save(existingLeave);

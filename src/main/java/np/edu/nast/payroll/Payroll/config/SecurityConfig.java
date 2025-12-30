@@ -24,18 +24,27 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
+                // Linking the CORS configuration below
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // Permitting the exact endpoints used by your React app
+                        // 1. Public endpoints (Login, Error, Password Reset)
                         .requestMatchers("/api/auth/**", "/error").permitAll()
-                        .requestMatchers("/api/users/forgot-password/**").permitAll()
-                        .requestMatchers("/api/users/reset-password/**").permitAll()
+                        .requestMatchers("/api/users/forgot-password/**", "/api/users/reset-password/**").permitAll()
 
-                        // Role-based access control
+                        // 2. Data endpoints (Permit these so React can fetch employees/depts/positions)
+                        // Note: If you want these secured later, you'll need to send a JWT token from React
+                        .requestMatchers("/api/employees/**").permitAll()
+                        .requestMatchers("/api/departments/**").permitAll()
+                        .requestMatchers("/api/designations/**").permitAll()
+                        .requestMatchers("/api/leaves/**").permitAll()
+
+                        // 3. Role-based access control (Keep these for specific dashboard actions)
                         .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN")
                         .requestMatchers("/api/accountant/**").hasAuthority("ROLE_ACCOUNTANT")
                         .requestMatchers("/api/employee/**").hasAuthority("ROLE_EMPLOYEE")
+
+                        // 4. Any other request must be authenticated
                         .anyRequest().authenticated()
                 );
         return http.build();
@@ -43,7 +52,7 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        // Warning: Only use NoOpPasswordEncoder for development/testing with plain-text passwords
+        // Still using NoOp for your local development/testing
         return NoOpPasswordEncoder.getInstance();
     }
 
@@ -55,10 +64,12 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:5173"));
+        // Allowed origins: include both standard React ports
+        config.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:3000"));
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
         return source;
