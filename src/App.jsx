@@ -6,61 +6,47 @@ import EmployeeLayout from "./components/EmployeeLayout";
 import AdminLayout from "./components/AdminLayout"; 
 import AccountantLayout from "./components/AccountantLayout"; 
 
-/* ================= COMMON ================= */
-import Landing from "./pages/Landing";
+/* ================= AUTH & PAGES ================= */
+import Landing from "./pages/Login/Landing.jsx";
+import ForgotPassword from "./pages/Common/ForgotPassword.jsx"; // ADD THIS
+import ResetPassword from "./pages/Common/ResetPassword.jsx"; 
 
-/* ================= LOGIN ================= */
-import AdminLogin from "./pages/Login/AdminLogin";
-import AccountantLogin from "./pages/Login/AccountantLogin";
-import EmployeeLogin from "./pages/Login/EmployeeLogin";
+/* ================= DASHBOARDS & SUBPAGES ================= */
+// ACCOUNTANT
+import AccountantDashboard from "./pages/Accountant/AccountantDashboard.jsx";
+import AccountantPayroll from "./pages/Accountant/Payroll.jsx"; 
+import Salary from "./pages/Accountant/Salary.jsx";
+import Tax from "./pages/Accountant/Tax.jsx";
+import AccountantReport from "./pages/Accountant/Report.jsx";
 
-/* ================= FORGOT PASSWORD COMPONENTS ================= */
-import AdminForgotPW from "./pages/Admin/Forgotpw"; 
-import AccountantForgotPass from "./pages/Accountant/Forgotpass"; 
-import EmployeeForgotPassword from "./pages/Employee/ForgotPassword";
-import ResetPassword from "./pages/Common/ResetPassword"; 
+// ADMIN
+import AdminDashboard from "./pages/Admin/AdminDashboard.jsx";
+import Employees from "./pages/Admin/Employees.jsx";
+import Attendance from "./pages/Admin/Attendance.jsx";
+import Leave from "./pages/Admin/Leave.jsx";
+import AdminPayroll from "./pages/Admin/Payroll.jsx";
+import Report from "./pages/Admin/Report.jsx";
 
-/* ================= ADMIN PAGES ================= */
-import AdminDashboard from "./pages/Admin/AdminDashboard";
-import Employees from "./pages/Admin/Employees";
-import Attendance from "./pages/Admin/Attendance";
-import Leave from "./pages/Admin/Leave";
-import AdminPayroll from "./pages/Admin/Payroll"; 
-import Report from "./pages/Admin/Report";
-import SystemConfig from "./pages/Admin/SystemConfig/System-Config";
-// ✅ NEW IMPORT: Organization Management Layout
-import OrgLayout from "./pages/Admin/Organization/OrgLayout";
+// EMPLOYEE
+import EmployeeDashboard from "./pages/Employee/EmployeeDashboard.jsx";
+import AttendanceRecords from "./pages/Employee/AttendanceRecords.jsx";
+import LeaveManagement from "./pages/Employee/LeaveManagement.jsx";
+import SalaryAnalytics from "./pages/Employee/SalaryAnalytics.jsx";
+import Settings from "./pages/Employee/Settings.jsx";
 
-/* ================= ACCOUNTANT PAGES ================= */
-import AccountantDashboard from "./pages/Accountant/AccountantDashboard"; 
-import AccountantPayroll from "./pages/Accountant/Payroll"; 
-import AccountantReport from "./pages/Accountant/Report";
-import Tax from "./pages/Accountant/Tax"; 
-import Salary from "./pages/Accountant/Salary"; 
-
-/* ================= EMPLOYEE PAGES ================= */
-import EmployeeDashboard from "./pages/Employee/EmployeeDashboard";
-import AttendanceRecords from "./pages/Employee/AttendanceRecords";
-import LeaveManagement from "./pages/Employee/LeaveManagement";
-import SalaryAnalytics from "./pages/Employee/SalaryAnalytics";
-import Settings from "./pages/Employee/Settings";
-
-/* ================= IMPROVED AUTH GUARD ================= */
+/* ================= PROTECTED ROUTE LOGIC ================= */
 const ProtectedRoute = ({ allowedRole }) => {
   const savedUser = localStorage.getItem("user_session");
   const user = savedUser ? JSON.parse(savedUser) : null;
 
-  if (!user) {
-    return <Navigate to="/" replace />;
-  }
+  if (!user) return <Navigate to="/" replace />;
+  
+  const userRole = user.role?.toUpperCase().trim(); 
+  const requiredRole = allowedRole.toUpperCase().trim();
 
-  const userRole = user.role.toLowerCase().trim();
-  const requiredRole = allowedRole.toLowerCase().trim();
-
-  if (userRole !== requiredRole) {
-    return <Navigate to="/" replace />;
-  }
-
+  // If the user's role doesn't match, send them back to login
+  if (userRole !== requiredRole) return <Navigate to="/" replace />;
+  
   return <Outlet />;
 };
 
@@ -73,21 +59,13 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Landing />} />
-
-        {/* ================= PUBLIC LOGIN ROUTES ================= */}
-        <Route path="/login/admin" element={<AdminLogin setUser={setUser} />} />
-        <Route path="/login/accountant" element={<AccountantLogin setUser={setUser} />} />
-        <Route path="/login/employee" element={<EmployeeLogin setUser={setUser} />} />
-
-        {/* ================= PUBLIC FORGOT PASSWORD ROUTES ================= */}
-        <Route path="/admin/forgot-password" element={<AdminForgotPW />} />
-        <Route path="/accountant/forgot-password" element={<AccountantForgotPass />} />
-        <Route path="/employee/forgot-password" element={<EmployeeForgotPassword />} />
+        {/* PUBLIC ROUTES */}
+        <Route path="/" element={<Landing setUser={setUser} />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} /> {/* ADDED THIS ROUTE */}
         <Route path="/reset-password" element={<ResetPassword />} />
 
-        {/* ================= ACCOUNTANT PANEL (PROTECTED) ================= */}
-        <Route path="/accountant" element={<ProtectedRoute allowedRole="accountant" />}>
+        {/* PROTECTED ACCOUNTANT ROUTES (ROLE ID 3) */}
+        <Route path="/accountant" element={<ProtectedRoute allowedRole="ROLE_ACCOUNTANT" />}>
           <Route element={<AccountantLayout />}>
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<AccountantDashboard />} />
@@ -98,24 +76,21 @@ function App() {
           </Route>
         </Route>
 
-        {/* ================= ADMIN PANEL (PROTECTED) ================= */}
-        <Route path="/admin" element={<ProtectedRoute allowedRole="admin" />}>
+        {/* PROTECTED ADMIN ROUTES (ROLE ID 1) */}
+        <Route path="/admin" element={<ProtectedRoute allowedRole="ROLE_ADMIN" />}>
           <Route element={<AdminLayout />}>
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="employees" element={<Employees />} />
-            {/* ✅ NEW ROUTE: Organization Setup */}
-            <Route path="organization" element={<OrgLayout />} />
             <Route path="attendance" element={<Attendance />} />
             <Route path="leave" element={<Leave />} />
             <Route path="payroll" element={<AdminPayroll />} />
             <Route path="report" element={<Report />} />
-            <Route path="system-config" element={<SystemConfig />} />
           </Route>
         </Route>
 
-        {/* ================= EMPLOYEE PANEL (PROTECTED) ================= */}
-        <Route path="/employee" element={<ProtectedRoute allowedRole="employee" />}>
+        {/* PROTECTED EMPLOYEE ROUTES (ROLE ID 4) */}
+        <Route path="/employee" element={<ProtectedRoute allowedRole="ROLE_EMPLOYEE" />}>
           <Route element={<EmployeeLayout />}>
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<EmployeeDashboard />} />
