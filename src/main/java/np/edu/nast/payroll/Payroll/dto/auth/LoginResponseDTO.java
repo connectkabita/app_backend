@@ -12,4 +12,5 @@ public class LoginResponseDTO {
     private String username;
     private String email;
     private String role; // The role name from Role entity
+    private String token;
 }
