@@ -8,6 +8,7 @@ import np.edu.nast.payroll.Payroll.repository.EmployeeRepository;
 import np.edu.nast.payroll.Payroll.service.AttendanceService;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -35,6 +36,25 @@ public class AttendanceServiceImpl implements AttendanceService {
                         "Employee not found with ID: " + attendance.getEmployee().getEmpId()));
 
         attendance.setEmployee(employee);
+
+        // ✅ SET DATE
+        if (attendance.getAttendanceDate() == null) {
+            attendance.setAttendanceDate(LocalDate.now());
+        }
+
+        // ✅ SET STATUS (THIS WAS MISSING)
+        if (attendance.getStatus() == null || attendance.getStatus().isBlank()) {
+            // Default logic if no status is provided
+            if (attendance.getCheckInTime() != null) {
+                attendance.setStatus("PRESENT");
+            } else {
+                attendance.setStatus("ABSENT");
+            }
+        } else {
+            // Normalize status to uppercase for consistency
+            attendance.setStatus(attendance.getStatus().toUpperCase()); // e.g., "LEAVE"
+        }
+
         return attendanceRepository.save(attendance);
     }
 
@@ -58,6 +78,9 @@ public class AttendanceServiceImpl implements AttendanceService {
         existing.setInGpsLong(updated.getInGpsLong());
         existing.setEmployee(employee);
 
+        if (updated.getStatus() != null && !updated.getStatus().isBlank()) {
+            existing.setStatus(updated.getStatus().toUpperCase());
+        }
         return attendanceRepository.save(existing);
     }
 
@@ -86,6 +109,12 @@ public class AttendanceServiceImpl implements AttendanceService {
         Employee employee = employeeRepository.findById(empId)
                 .orElseThrow(() -> new ResourceNotFoundException("Employee not found with ID: " + empId));
 
-        return attendanceRepository.findByEmployeeEmpId(empId);
+        return attendanceRepository.findByEmployee_EmpId(employee.getEmpId());
+
+
     }
+
+
+
+
 }

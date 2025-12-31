@@ -1,39 +1,28 @@
 package np.edu.nast.payroll.Payroll.controller;
 
-import np.edu.nast.payroll.Payroll.entity.Report;
+import np.edu.nast.payroll.Payroll.reportdto.MonthlyPayrollDTO;
+import np.edu.nast.payroll.Payroll.reportdto.ReportSummaryDTO;
 import np.edu.nast.payroll.Payroll.service.ReportService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.*;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/reports")
+@RequestMapping("/api/reports/analytics")
 @CrossOrigin(origins = "http://localhost:5173")
+@RequiredArgsConstructor
 public class ReportController {
 
-    @Autowired
-    private ReportService reportService;
+    private final ReportService analyticsService;
 
-    @GetMapping("/history")
-    public List<Report> getHistory() {
-        return reportService.getAllReports();
+    @GetMapping("/summary")
+    public ReportSummaryDTO getSummary(@RequestParam int year) {
+        return analyticsService.getSummary(year);
     }
 
-    @PostMapping("/generate")
-    public ResponseEntity<String> generate(@RequestParam String category) {
-        reportService.generateAndSaveReport(category);
-        return ResponseEntity.ok("Generated");
-    }
-
-    @GetMapping("/download/{id}")
-    public ResponseEntity<byte[]> download(@PathVariable Long id) {
-        Report report = reportService.getReportById(id);
-        byte[] data = reportService.getFileData(report.getFilePath());
-
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + report.getFileName())
-                .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                .body(data);
+    @GetMapping("/monthly-payroll")
+    public List<MonthlyPayrollDTO> getMonthlyPayroll(@RequestParam int year) {
+        return analyticsService.getMonthlyPayroll(year);
     }
 }

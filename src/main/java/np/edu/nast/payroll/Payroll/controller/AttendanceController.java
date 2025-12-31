@@ -31,4 +31,5 @@ public class AttendanceController {
     public List<Attendance> getByEmployee(@PathVariable Integer empId) {
         return attendanceService.getAttendanceByEmployee(empId);
     }
+
 }

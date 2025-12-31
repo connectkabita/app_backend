@@ -7,10 +7,32 @@ import java.time.LocalDate;
 import java.util.List;
 
 public interface AttendanceRepository extends JpaRepository<Attendance, Integer> {
-    List<Attendance> findByEmployeeEmpId(Integer empId);
+    // ✔ Employee attendance history
+    List<Attendance> findByEmployee_EmpId(Integer empId);
+
+    // ✔ Daily dashboard count
     long countByAttendanceDate(LocalDate attendanceDate);
 
-    // ADD THIS: Fetches only today's attendance records ordered by latest check-in
-    @Query("SELECT a FROM Attendance a WHERE a.attendanceDate = CURRENT_DATE ORDER BY a.checkInTime DESC")
+    // ✔ Summary cards (Present / Absent / Leave)
+    long countByEmployee_EmpIdAndStatus(Integer empId, String status);
+
+
+
+
+
+
+
+    // ✔ Admin dashboard (today)
+    @Query("""
+        SELECT a 
+        FROM Attendance a 
+        WHERE a.attendanceDate = CURRENT_DATE 
+        ORDER BY a.checkInTime DESC
+    """)
     List<Attendance> findTodaysAttendance();
+
+
+
+
+
 }

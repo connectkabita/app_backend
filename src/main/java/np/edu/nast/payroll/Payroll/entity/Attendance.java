@@ -9,7 +9,8 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "attendance")
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+@Getter
+@Setter @NoArgsConstructor @AllArgsConstructor @Builder
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Attendance {
 
@@ -32,4 +33,8 @@ public class Attendance {
 
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate attendanceDate;
+
+    @Column(nullable = false)
+    private String status; // PRESENT, ABSENT, LEAVE
 }
+

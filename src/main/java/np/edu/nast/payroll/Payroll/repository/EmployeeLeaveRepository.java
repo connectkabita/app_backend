@@ -9,14 +9,13 @@ import java.util.List;
 @Repository
 public interface EmployeeLeaveRepository extends JpaRepository<EmployeeLeave, Integer> {
 
-    // Required by your Service implementation to fix the "Cannot resolve method" error
+    // Retrieves all leave records for a specific Employee object
     List<EmployeeLeave> findAllByEmployee(Employee employee);
 
-    // Filter by ID directly if needed
+    // Retrieves all leave records using just the Employee ID
     List<EmployeeLeave> findByEmployeeEmpId(Integer empId);
 
-    // New line added for status counting
+    // Counts how many leaves are in a certain status (e.g., "Pending")
     long countByStatus(String status);
-
 
 }
