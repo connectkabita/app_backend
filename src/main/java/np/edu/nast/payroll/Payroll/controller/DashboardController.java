@@ -29,8 +29,14 @@ public class DashboardController {
     @GetMapping("/stats")
     public Map<String, Object> getDashboardStats() {
         Map<String, Object> stats = new HashMap<>();
+
+        // 1. Total Workforce Count
         long totalEmployees = employeeRepository.count();
-        long pendingLeaves = leaveRepository.countByStatus("PENDING");
+
+        // 2. Pending Leaves (Matches the custom method in Repository)
+        long pendingLeaves = leaveRepository.countByStatus("Pending");
+
+        // 3. Attendance Calculation
         long presentToday = attendanceRepository.countByAttendanceDate(LocalDate.now());
 
         String attendancePercentage = totalEmployees > 0
@@ -40,11 +46,13 @@ public class DashboardController {
         stats.put("totalWorkforce", totalEmployees);
         stats.put("leaveRequests", pendingLeaves);
         stats.put("dailyAttendance", attendancePercentage);
+
         return stats;
     }
 
     @GetMapping("/recent-attendance")
     public List<Attendance> getRecentAttendance() {
-        return attendanceRepository.findTodaysAttendance();
+        // Fetches list of today's check-ins for the dashboard table
+        return attendanceRepository.findAllByAttendanceDate(LocalDate.now());
     }
 }

@@ -5,6 +5,7 @@ import np.edu.nast.payroll.Payroll.service.PayrollService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 import java.util.Map;
 
@@ -21,7 +22,14 @@ public class PayrollController {
         return payrollService.getAllPayrolls();
     }
 
-    @PutMapping("/{id}/status")
+    @PostMapping
+    public ResponseEntity<Payroll> createPayroll(@RequestBody Map<String, Object> payload) {
+        // This will now compile because processPayroll is defined
+        Payroll newPayroll = payrollService.processPayroll(payload);
+        return ResponseEntity.ok(newPayroll);
+    }
+
+    @PatchMapping("/{id}/status")
     public ResponseEntity<Payroll> updateStatus(@PathVariable Integer id, @RequestBody Map<String, String> statusUpdate) {
         String newStatus = statusUpdate.get("status");
         Payroll updatedPayroll = payrollService.updateStatus(id, newStatus);

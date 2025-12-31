@@ -8,13 +8,9 @@ import java.util.List;
 
 @Repository
 public interface EmployeeLeaveRepository extends JpaRepository<EmployeeLeave, Integer> {
-
-    // Retrieves all leave records for a specific Employee object
-    List<EmployeeLeave> findAllByEmployee(Employee employee);
-
-    // Retrieves all leave records using just the Employee ID
-    List<EmployeeLeave> findByEmployeeEmpId(Integer empId);
-
-    // Counts how many leaves are in a certain status (e.g., "Pending")
+    // Fixes DashboardController
     long countByStatus(String status);
+
+    // Fixes EmployeeLeaveServiceImpl
+    List<EmployeeLeave> findAllByEmployee(Employee employee);
 }

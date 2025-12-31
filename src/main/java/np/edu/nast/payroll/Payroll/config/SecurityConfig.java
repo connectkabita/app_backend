@@ -24,23 +24,24 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
-                // Linking the CORS configuration below
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // 1. Public endpoints (Login, Error, Password Reset)
+                        // 1. Public & Auth Endpoints
                         .requestMatchers("/api/auth/**", "/error").permitAll()
                         .requestMatchers("/api/users/forgot-password/**", "/api/users/reset-password/**").permitAll()
 
-                        // 2. Data endpoints (Permit these so React can fetch employees/depts/positions)
-                        // Note: If you want these secured later, you'll need to send a JWT token from React
+                        // 2. Data Endpoints (Permitted for React development)
                         .requestMatchers("/api/employees/**").permitAll()
                         .requestMatchers("/api/departments/**").permitAll()
                         .requestMatchers("/api/designations/**").permitAll()
-                        .requestMatchers("/api/leaves/**").permitAll()
                         .requestMatchers("/api/attendance/**").permitAll()
 
-                        // 3. Role-based access control (Keep these for specific dashboard actions)
+                        // This line specifically fixes the 403 Forbidden on Leave Requests
+                        .requestMatchers("/api/employee-leaves/**").permitAll()
+                        .requestMatchers("/api/payrolls/**").permitAll()
+
+                        // 3. Role-based access control
                         .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN")
                         .requestMatchers("/api/accountant/**").hasAuthority("ROLE_ACCOUNTANT")
                         .requestMatchers("/api/employee/**").hasAuthority("ROLE_EMPLOYEE")
@@ -53,7 +54,7 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        // Still using NoOp for your local development/testing
+        // NoOp for development
         return NoOpPasswordEncoder.getInstance();
     }
 
@@ -65,9 +66,9 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        // Allowed origins: include both standard React ports
         config.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:3000"));
-        config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        // Added PATCH to allowed methods for leave status updates
+        config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
 
