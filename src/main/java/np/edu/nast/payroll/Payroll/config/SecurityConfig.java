@@ -1,8 +1,12 @@
 package np.edu.nast.payroll.Payroll.config;
 
+ 
+import jakarta.servlet.Filter;
+
 import lombok.RequiredArgsConstructor;
 import np.edu.nast.payroll.Payroll.security.CustomUserDetailsService;
 import np.edu.nast.payroll.Payroll.security.JwtFilter;
+ 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -54,6 +58,7 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        Filter jwtFilter = null;
         http
                 .csrf(csrf -> csrf.disable()) // Already disabled, which is good
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -80,6 +85,7 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+      
 
         return http.build();
     }
