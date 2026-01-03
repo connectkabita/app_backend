@@ -23,10 +23,11 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.disable())
+                .csrf(csrf -> csrf.disable()) // Already disabled, which is good
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+
                         // 1. Public & Auth Endpoints
                         .requestMatchers("/api/auth/**", "/error").permitAll()
                         .requestMatchers("/api/users/forgot-password/**", "/api/users/reset-password/**").permitAll()
@@ -41,14 +42,36 @@ public class SecurityConfig {
                         .requestMatchers("/api/employee-leaves/**").permitAll()
                         .requestMatchers("/api/payrolls/**").permitAll()
                         .requestMatchers("/api/reports/**").permitAll()
-                        // 3. Role-based access control
+                        // 3. Role-based access contro
+                        // 1. ADD YOUR NEW SALARY ENDPOINTS TO PERMITALL
+                        .requestMatchers("/api/employee-salary-components/**").permitAll()
+                        .requestMatchers("/api/grade-salary-components/**").permitAll()
+                        .requestMatchers("/api/salary-components/**").permitAll()
+
+                        // Public endpoints
+                        .requestMatchers("/api/auth/**", "/error").permitAll()
+                        .requestMatchers("/api/users/forgot-password/**", "/api/users/reset-password/**").permitAll()
+
+                        // These are already permitted in your file
+                        .requestMatchers("/api/employees/**", "/api/departments/**", "/api/designations/**").permitAll()
+                        .requestMatchers("/api/leaves/**", "/api/attendance/**", "/api/payrolls/**", "/api/reports/**").permitAll()
+
+                        // Role-based access (Keep these for later)
+
                         .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN")
                         .requestMatchers("/api/accountant/**").hasAuthority("ROLE_ACCOUNTANT")
                         .requestMatchers("/api/employee/**").hasAuthority("ROLE_EMPLOYEE")
 
+
                         // 4. Any other request must be authenticated
                         .anyRequest().authenticated()
                 );
+
+                        .anyRequest().authenticated()
+                )
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+
+
         return http.build();
     }
 

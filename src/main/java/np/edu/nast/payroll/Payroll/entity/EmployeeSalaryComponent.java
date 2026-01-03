@@ -13,11 +13,11 @@ public class EmployeeSalaryComponent {
     @Column(nullable = false)
     private Integer escId;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "emp_id", nullable = false)
     private Employee employee;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "component_id", nullable = false)
     private SalaryComponent salaryComponent;
     @Column(nullable = false)
