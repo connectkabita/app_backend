@@ -2,7 +2,6 @@ package np.edu.nast.payroll.Payroll.controller;
 
 import np.edu.nast.payroll.Payroll.entity.EmployeeLeave;
 import np.edu.nast.payroll.Payroll.service.EmployeeLeaveService;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
@@ -12,31 +11,31 @@ import java.util.Map;
 @CrossOrigin(origins = "http://localhost:5173")
 public class EmployeeLeaveController {
 
-    private final EmployeeLeaveService leaveService;
+    private final EmployeeLeaveService employeeLeaveService;
 
-    public EmployeeLeaveController(EmployeeLeaveService leaveService) {
-        this.leaveService = leaveService;
+    public EmployeeLeaveController(EmployeeLeaveService service) {
+        this.employeeLeaveService = service;
+    }
+
+    @PostMapping
+    public EmployeeLeave requestLeave(@RequestBody EmployeeLeave leave) {
+        return employeeLeaveService.requestLeave(leave);
     }
 
     @GetMapping
-    public List<EmployeeLeave> getAllLeaves() {
-        return leaveService.getAllLeaves(); // Fixed: Matches ServiceImpl
+    public List<EmployeeLeave> getAll() {
+        return employeeLeaveService.getAllLeaves();
     }
 
     @PatchMapping("/{id}/status")
-    public ResponseEntity<EmployeeLeave> updateStatus(
-            @PathVariable Integer id,
-            @RequestBody Map<String, Object> payload) {
+    public EmployeeLeave updateStatus(@PathVariable Integer id, @RequestBody Map<String, Object> statusUpdate) {
+        String status = (String) statusUpdate.get("status");
 
-        String status = (String) payload.get("status");
-        Integer adminId = (Integer) payload.get("adminId");
+        // Extract adminId from JSON and convert to Integer to match Service requirements
+        Object adminIdObj = statusUpdate.get("adminId");
+        Integer adminId = (adminIdObj != null) ? Integer.parseInt(adminIdObj.toString()) : 1;
 
-        EmployeeLeave updatedLeave = leaveService.updateLeaveStatus(id, status, adminId);
-        return ResponseEntity.ok(updatedLeave);
-    }
-
-    @GetMapping("/employee/{empId}")
-    public List<EmployeeLeave> getByEmployee(@PathVariable Integer empId) {
-        return leaveService.getLeavesByEmployee(empId); // Fixed: Matches ServiceImpl
+        // Passed 3 arguments to satisfy the service interface
+        return employeeLeaveService.updateLeaveStatus(id, status, adminId);
     }
 }

@@ -57,13 +57,25 @@ public class EmployeeLeave {
     // --- MERGED CALLBACK METHOD ---
     @PrePersist
     public void handleBeforeInsert() {
-        // 1. Calculate totalDays to prevent DataIntegrityViolationException
+        LocalDate today = LocalDate.now();
+
         if (this.startDate != null && this.endDate != null) {
+            // 1. Constraint: Start Date cannot be in the past
+            if (this.startDate.isBefore(today)) {
+                throw new IllegalArgumentException("Leave start date cannot be in the past.");
+            }
+
+            // 2. Constraint: Start Date must be before or equal to End Date
+            if (this.startDate.isAfter(this.endDate)) {
+                throw new IllegalArgumentException("Start date must be before or equal to the end date.");
+            }
+
+            // 3. Logic: Calculate totalDays
             long days = ChronoUnit.DAYS.between(this.startDate, this.endDate) + 1;
             this.totalDays = (int) days;
         }
 
-        // 2. Default status to "Pending" if not set
+        // 4. Default status
         if (this.status == null || this.status.isEmpty()) {
             this.status = "Pending";
         }

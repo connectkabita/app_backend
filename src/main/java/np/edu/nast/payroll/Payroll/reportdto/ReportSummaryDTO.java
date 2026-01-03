@@ -1,10 +1,11 @@
-package np.edu.nast.payroll.Payroll.dtoReports;
+package np.edu.nast.payroll.Payroll.reportdto;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 
-@Getter @Setter
-@AllArgsConstructor @NoArgsConstructor
-public class PayrollSummaryDTO {
+@Data
+@AllArgsConstructor
+public class ReportSummaryDTO {
     private long totalEmployees;
     private double monthlyPayroll;
     private double totalDeductions;

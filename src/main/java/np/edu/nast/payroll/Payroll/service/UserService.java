@@ -4,7 +4,7 @@ import np.edu.nast.payroll.Payroll.entity.User;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import java.util.List;
 
-public interface UserService extends UserDetailsService {
+public interface UserService {
     User create(User user);
     List<User> getAll();
     void delete(Integer id);
