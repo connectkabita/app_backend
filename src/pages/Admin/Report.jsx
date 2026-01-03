@@ -8,7 +8,7 @@ import {
   Tooltip,
   Legend
 } from "chart.js";
-import api from "../../api/axios"; // JWT-enabled axios instance
+import api from "../../api/axios"; // Axios instance
 import "./Report.css";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
@@ -35,7 +35,7 @@ export default function Report() {
     leaveDays: 0
   });
 
-  // Fetch payroll summary and monthly data whenever year changes
+  // Fetch summary and monthly payroll whenever year changes
   useEffect(() => {
     fetchPayrollData();
   }, [year]);
@@ -45,6 +45,7 @@ export default function Report() {
     fetchAttendanceData();
   }, [year, month]);
 
+  /** Fetch summary cards and monthly payroll chart */
   const fetchPayrollData = async () => {
     try {
       const summaryRes = await api.get(`/reports/analytics/summary?year=${year}`);
@@ -56,6 +57,7 @@ export default function Report() {
     }
   };
 
+  /** Fetch attendance summary */
   const fetchAttendanceData = async () => {
     try {
       const res = await api.get(`/reports/attendance/summary?year=${year}&month=${month}`);
@@ -65,6 +67,7 @@ export default function Report() {
     }
   };
 
+  /** Chart config for monthly payroll */
   const payrollChart = {
     labels: monthlyPayrollData.map(item => item.month),
     datasets: [
@@ -78,6 +81,7 @@ export default function Report() {
 
   return (
     <div className="report-page">
+      {/* Left side: Summary & Filters */}
       <div className="report-left">
         <header className="report-header">
           <h1>Payroll & Attendance Reports</h1>
@@ -120,6 +124,7 @@ export default function Report() {
         </div>
       </div>
 
+      {/* Right side: Chart */}
       <div className="report-right">
         <div className="chart-section">
           <h2>Monthly Payroll Expenditure</h2>
@@ -142,7 +147,7 @@ export default function Report() {
   );
 }
 
-/* Reusable Summary Card Component */
+/** Summary Card Component */
 function SummaryCard({ title, value, icon }) {
   return (
     <div className="summary-card">
