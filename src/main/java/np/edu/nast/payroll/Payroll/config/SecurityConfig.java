@@ -40,7 +40,7 @@ public class SecurityConfig {
                         // This line specifically fixes the 403 Forbidden on Leave Requests
                         .requestMatchers("/api/employee-leaves/**").permitAll()
                         .requestMatchers("/api/payrolls/**").permitAll()
-
+                        .requestMatchers("/api/reports/**").permitAll()
                         // 3. Role-based access control
                         .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN")
                         .requestMatchers("/api/accountant/**").hasAuthority("ROLE_ACCOUNTANT")
