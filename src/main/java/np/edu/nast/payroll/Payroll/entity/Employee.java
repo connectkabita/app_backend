@@ -7,7 +7,6 @@ import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-
 @Entity
 @Table(name = "employee")
 @Getter
@@ -21,6 +20,11 @@ public class Employee {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer empId;
+
+    // This makes user_id mandatory in the employee table
+    @OneToOne(fetch = FetchType.EAGER, optional = false)
+    @JoinColumn(name = "user_id", referencedColumnName = "userId", nullable = false)
+    private User user;
 
     @Column(nullable = false)
     private String firstName;
@@ -69,44 +73,17 @@ public class Employee {
     @Column(nullable = false)
     private Boolean isActive;
 
-    @OneToOne(
-            mappedBy = "employee",
-            cascade = CascadeType.ALL,
-            orphanRemoval = true,
-            fetch = FetchType.LAZY
-    )
-    @JsonIgnore
-    private User user;
-
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    /**
-     * This method runs before the data is saved to the database.
-     * It prevents "null property" errors by providing default values.
-     */
     @PrePersist
     public void onCreate() {
         this.createdAt = LocalDateTime.now();
-
-        // Default values for mandatory fields to prevent persistence errors
-        if (this.isActive == null) {
-            this.isActive = true;
-        }
-        if (this.maritalStatus == null) {
-            this.maritalStatus = "SINGLE";
-        }
-        if (this.employmentStatus == null) {
-            this.employmentStatus = "FULL_TIME";
-        }
-        if (this.basicSalary == null) {
-            this.basicSalary = 0.0;
-        }
-        if (this.allowances == null) {
-            this.allowances = 0.0;
-        }
-        if (this.deductions == null) {
-            this.deductions = 0.0;
-        }
+        if (this.isActive == null) this.isActive = true;
+        if (this.maritalStatus == null) this.maritalStatus = "SINGLE";
+        if (this.employmentStatus == null) this.employmentStatus = "FULL_TIME";
+        if (this.basicSalary == null) this.basicSalary = 0.0;
+        if (this.allowances == null) this.allowances = 0.0;
+        if (this.deductions == null) this.deductions = 0.0;
     }
 }

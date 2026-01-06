@@ -28,10 +28,6 @@ public class User {
     @Column(nullable = false, unique = true)
     private String email;
 
-    @OneToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "emp_id", nullable = false, unique = true)
-    private Employee employee;
-
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "role_id", nullable = false)
     private Role role;

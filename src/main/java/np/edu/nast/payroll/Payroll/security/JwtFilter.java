@@ -1,5 +1,7 @@
 package np.edu.nast.payroll.Payroll.security;
 
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -8,7 +10,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -37,35 +38,69 @@ public class JwtFilter extends OncePerRequestFilter {
         }
 
         String token = authHeader.substring(7);
-        if (token.isBlank() || token.equals("null")) {
+
+        if (token.isBlank() || "null".equalsIgnoreCase(token)) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        String username = jwtUtils.getUsernameFromToken(token);
+        try {
+            String username = jwtUtils.getUsernameFromToken(token);
 
-        if (username != null &&
-                SecurityContextHolder.getContext().getAuthentication() == null) {
+            if (username != null &&
+                    SecurityContextHolder.getContext().getAuthentication() == null) {
 
-            UserDetails userDetails =
-                    userDetailsService.loadUserByUsername(username);
+                UserDetails userDetails =
+                        userDetailsService.loadUserByUsername(username);
 
-            if (jwtUtils.validateToken(token)) {
-                UsernamePasswordAuthenticationToken auth =
-                        new UsernamePasswordAuthenticationToken(
-                                userDetails,
-                                null,
-                                userDetails.getAuthorities()
-                        );
-                auth.setDetails(
-                        new WebAuthenticationDetailsSource()
-                                .buildDetails(request)
-                );
+                if (jwtUtils.validateToken(token)) {
 
-                SecurityContextHolder.getContext().setAuthentication(auth);
+                    UsernamePasswordAuthenticationToken authentication =
+                            new UsernamePasswordAuthenticationToken(
+                                    userDetails,
+                                    null,
+                                    userDetails.getAuthorities()
+                            );
+
+                    authentication.setDetails(
+                            new WebAuthenticationDetailsSource()
+                                    .buildDetails(request)
+                    );
+
+                    SecurityContextHolder.getContext()
+                            .setAuthentication(authentication);
+                }
             }
-        }
 
-        filterChain.doFilter(request, response);
+            filterChain.doFilter(request, response);
+
+        } catch (ExpiredJwtException ex) {
+            sendUnauthorized(response,
+                    "TOKEN_EXPIRED",
+                    "JWT token has expired. Please login again.");
+        } catch (JwtException | IllegalArgumentException ex) {
+            sendUnauthorized(response,
+                    "INVALID_TOKEN",
+                    "JWT token is invalid.");
+        }
+    }
+
+    private void sendUnauthorized(
+            HttpServletResponse response,
+            String error,
+            String message
+    ) throws IOException {
+
+        SecurityContextHolder.clearContext();
+
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setContentType("application/json");
+
+        response.getWriter().write("""
+            {
+              "error": "%s",
+              "message": "%s"
+            }
+            """.formatted(error, message));
     }
 }
