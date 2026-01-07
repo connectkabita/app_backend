@@ -1,5 +1,6 @@
 package np.edu.nast.payroll.Payroll.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
@@ -11,7 +12,7 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder // <--- This allows the .builder() in your Service
+@Builder
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class User {
 
@@ -23,6 +24,7 @@ public class User {
     private String username;
 
     @Column(nullable = false)
+    @JsonIgnore // 🔐 NEVER expose passwords
     private String password;
 
     @Column(nullable = false, unique = true)
@@ -30,14 +32,17 @@ public class User {
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "role_id", nullable = false)
+    @JsonIgnore // 🔥 FIX: prevents recursion & security leak
     private Role role;
 
     private String status;
 
     @Column(name = "reset_token")
+    @JsonIgnore
     private String resetToken;
 
     @Column(name = "token_expiry")
+    @JsonIgnore
     private LocalDateTime tokenExpiry;
 
     private LocalDateTime createdAt;

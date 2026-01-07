@@ -7,6 +7,7 @@ import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "employee")
 @Getter
@@ -21,9 +22,9 @@ public class Employee {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer empId;
 
-    // This makes user_id mandatory in the employee table
-    @OneToOne(fetch = FetchType.EAGER, optional = false)
-    @JoinColumn(name = "user_id", referencedColumnName = "userId", nullable = false)
+    @OneToOne(fetch = FetchType.EAGER, optional = true)
+    @JoinColumn(name = "user_id", referencedColumnName = "userId", nullable = true)
+    @JsonIgnore // 🔥 CRITICAL FIX
     private User user;
 
     @Column(nullable = false)

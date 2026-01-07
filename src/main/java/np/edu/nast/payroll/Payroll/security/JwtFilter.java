@@ -30,16 +30,18 @@ public class JwtFilter extends OncePerRequestFilter {
             FilterChain filterChain
     ) throws ServletException, IOException {
 
-        String authHeader = request.getHeader("Authorization");
+        final String authHeader = request.getHeader("Authorization");
 
+        // 1. Skip filter if no Bearer token
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        String token = authHeader.substring(7);
+        final String token = authHeader.substring(7);
 
-        if (token.isBlank() || "null".equalsIgnoreCase(token)) {
+        // 2. Handle cases where frontend sends "Bearer null" or "Bearer undefined"
+        if (token.isBlank() || "null".equalsIgnoreCase(token) || "undefined".equalsIgnoreCase(token)) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -47,14 +49,10 @@ public class JwtFilter extends OncePerRequestFilter {
         try {
             String username = jwtUtils.getUsernameFromToken(token);
 
-            if (username != null &&
-                    SecurityContextHolder.getContext().getAuthentication() == null) {
-
-                UserDetails userDetails =
-                        userDetailsService.loadUserByUsername(username);
+            if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
                 if (jwtUtils.validateToken(token)) {
-
                     UsernamePasswordAuthenticationToken authentication =
                             new UsernamePasswordAuthenticationToken(
                                     userDetails,
@@ -63,25 +61,22 @@ public class JwtFilter extends OncePerRequestFilter {
                             );
 
                     authentication.setDetails(
-                            new WebAuthenticationDetailsSource()
-                                    .buildDetails(request)
+                            new WebAuthenticationDetailsSource().buildDetails(request)
                     );
 
-                    SecurityContextHolder.getContext()
-                            .setAuthentication(authentication);
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
                 }
             }
-
+            // Continue the chain if authentication is successful
             filterChain.doFilter(request, response);
 
         } catch (ExpiredJwtException ex) {
-            sendUnauthorized(response,
-                    "TOKEN_EXPIRED",
-                    "JWT token has expired. Please login again.");
+            sendUnauthorized(response, "TOKEN_EXPIRED", "JWT token has expired. Please login again.");
         } catch (JwtException | IllegalArgumentException ex) {
-            sendUnauthorized(response,
-                    "INVALID_TOKEN",
-                    "JWT token is invalid.");
+            sendUnauthorized(response, "INVALID_TOKEN", "JWT token is invalid.");
+        } catch (Exception ex) {
+            // General catch-all to prevent 400 Bad Request
+            sendUnauthorized(response, "AUTH_ERROR", "An error occurred during authentication.");
         }
     }
 
@@ -90,17 +85,18 @@ public class JwtFilter extends OncePerRequestFilter {
             String error,
             String message
     ) throws IOException {
-
         SecurityContextHolder.clearContext();
 
+        // IMPORTANT: Once we write to the response, we do NOT call filterChain.doFilter()
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setContentType("application/json");
 
-        response.getWriter().write("""
-            {
-              "error": "%s",
-              "message": "%s"
-            }
-            """.formatted(error, message));
+        String jsonResponse = String.format(
+                "{\"error\": \"%s\", \"message\": \"%s\"}",
+                error, message
+        );
+
+        response.getWriter().write(jsonResponse);
+        response.getWriter().flush();
     }
 }
