@@ -16,8 +16,8 @@ public class EmailService {
     public void sendOtpEmail(String to, String otp) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(to);
-        message.setSubject("Your Payroll System OTP");
-        message.setText("Your verification OTP is: " + otp);
+        message.setSubject("Password Reset OTP - NAST Payroll");
+        message.setText("Your verification code is: " + otp);
         mailSender.send(message);
     }
 }

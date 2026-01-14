@@ -8,9 +8,18 @@ import java.util.List;
 
 @Repository
 public interface EmployeeLeaveRepository extends JpaRepository<EmployeeLeave, Integer> {
+
+    // Required by your Service implementation to fix the "Cannot resolve method" error
+    List<EmployeeLeave> findAllByEmployee(Employee employee);
+
+    // Filter by ID directly if needed
     List<EmployeeLeave> findByEmployeeEmpId(Integer empId);
 
+<<<<<<< HEAD
     // Kept from HEAD
+=======
+    // New line added for status counting
+>>>>>>> b71b403 (change made)
     long countByStatus(String status);
 
     // Kept from your local commit

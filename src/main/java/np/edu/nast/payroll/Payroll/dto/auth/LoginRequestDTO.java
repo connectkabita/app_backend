@@ -1,14 +1,9 @@
 package np.edu.nast.payroll.Payroll.dto.auth;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 
-@Getter
-@Setter
+@Data
 public class LoginRequestDTO {
-    private String usernameOrEmail;
+    private String username;
     private String password;
-
-    // 🔹 Add this field for role-based login
-    private String role;
 }

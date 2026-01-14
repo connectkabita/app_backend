@@ -39,15 +39,12 @@ public class EmployeeLeaveServiceImpl implements EmployeeLeaveService {
         leave.setStatus(status);
 
         if ("Approved".equalsIgnoreCase(status)) {
-            // Validate and fetch the admin user who is performing the approval
             User admin = userRepo.findById(adminId)
-                    .orElseThrow(() -> new IllegalArgumentException(
-                            "Admin User not found with ID: " + adminId));
+                    .orElseThrow(() -> new IllegalArgumentException("Admin User not found with ID: " + adminId));
 
-            leave.setApprovedBy(admin); // Updates the approved_by_user_id column
-            leave.setApprovedAt(LocalDateTime.now()); // Updates the approved_at column
+            leave.setApprovedBy(admin);
+            leave.setApprovedAt(LocalDateTime.now());
         } else {
-            // If rejected or pending, clear approval data
             leave.setApprovedBy(null);
             leave.setApprovedAt(null);
         }
@@ -58,30 +55,23 @@ public class EmployeeLeaveServiceImpl implements EmployeeLeaveService {
     @Override
     @Transactional
     public EmployeeLeave requestLeave(EmployeeLeave leave) {
-
-        // Validate Employee
         if (leave.getEmployee() == null || leave.getEmployee().getEmpId() == null) {
             throw new IllegalArgumentException("Employee ID is required");
         }
         Employee employee = employeeRepo.findById(leave.getEmployee().getEmpId())
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Employee not found with ID: " + leave.getEmployee().getEmpId()));
+                .orElseThrow(() -> new IllegalArgumentException("Employee not found with ID: " + leave.getEmployee().getEmpId()));
         leave.setEmployee(employee);
 
-        // Validate LeaveType
         if (leave.getLeaveType() == null || leave.getLeaveType().getLeaveTypeId() == null) {
             throw new IllegalArgumentException("Leave Type ID is required");
         }
         LeaveType leaveType = leaveTypeRepo.findById(leave.getLeaveType().getLeaveTypeId())
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Leave Type not found with ID: " + leave.getLeaveType().getLeaveTypeId()));
+                .orElseThrow(() -> new IllegalArgumentException("Leave Type not found with ID: " + leave.getLeaveType().getLeaveTypeId()));
         leave.setLeaveType(leaveType);
 
-        // Validate ApprovedBy user if provided
         if (leave.getApprovedBy() != null && leave.getApprovedBy().getUserId() != null) {
             User approvedBy = userRepo.findById(leave.getApprovedBy().getUserId())
-                    .orElseThrow(() -> new IllegalArgumentException(
-                            "Approved By User not found with ID: " + leave.getApprovedBy().getUserId()));
+                    .orElseThrow(() -> new IllegalArgumentException("Approved By User not found with ID: " + leave.getApprovedBy().getUserId()));
             leave.setApprovedBy(approvedBy);
         }
 
@@ -97,6 +87,8 @@ public class EmployeeLeaveServiceImpl implements EmployeeLeaveService {
     public List<EmployeeLeave> getLeavesByEmployee(Integer empId) {
         Employee employee = employeeRepo.findById(empId)
                 .orElseThrow(() -> new IllegalArgumentException("Employee not found with ID: " + empId));
+
+        // This will now work once you update the Repository file
         return employeeLeaveRepo.findAllByEmployee(employee);
     }
 
@@ -110,40 +102,32 @@ public class EmployeeLeaveServiceImpl implements EmployeeLeaveService {
     @Override
     @Transactional
     public EmployeeLeave updateLeave(Integer id, EmployeeLeave leave) {
-
         EmployeeLeave existingLeave = employeeLeaveRepo.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Leave not found with ID: " + id));
 
-        // Validate Employee
         if (leave.getEmployee() == null || leave.getEmployee().getEmpId() == null) {
             throw new IllegalArgumentException("Employee ID is required");
         }
         Employee employee = employeeRepo.findById(leave.getEmployee().getEmpId())
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Employee not found with ID: " + leave.getEmployee().getEmpId()));
+                .orElseThrow(() -> new IllegalArgumentException("Employee not found with ID: " + leave.getEmployee().getEmpId()));
         existingLeave.setEmployee(employee);
 
-        // Validate LeaveType
         if (leave.getLeaveType() == null || leave.getLeaveType().getLeaveTypeId() == null) {
             throw new IllegalArgumentException("Leave Type ID is required");
         }
         LeaveType leaveType = leaveTypeRepo.findById(leave.getLeaveType().getLeaveTypeId())
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Leave Type not found with ID: " + leave.getLeaveType().getLeaveTypeId()));
+                .orElseThrow(() -> new IllegalArgumentException("Leave Type not found with ID: " + leave.getLeaveType().getLeaveTypeId()));
         existingLeave.setLeaveType(leaveType);
 
-        // Copy other fields
         existingLeave.setStartDate(leave.getStartDate());
         existingLeave.setEndDate(leave.getEndDate());
         existingLeave.setTotalDays(leave.getTotalDays());
         existingLeave.setReason(leave.getReason());
         existingLeave.setStatus(leave.getStatus());
 
-        // Validate ApprovedBy if provided
         if (leave.getApprovedBy() != null && leave.getApprovedBy().getUserId() != null) {
             User approvedBy = userRepo.findById(leave.getApprovedBy().getUserId())
-                    .orElseThrow(() -> new IllegalArgumentException(
-                            "Approved By User not found with ID: " + leave.getApprovedBy().getUserId()));
+                    .orElseThrow(() -> new IllegalArgumentException("Approved By User not found with ID: " + leave.getApprovedBy().getUserId()));
             existingLeave.setApprovedBy(approvedBy);
         } else {
             existingLeave.setApprovedBy(null);
