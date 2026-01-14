@@ -124,7 +124,7 @@ public class PayrollServiceImpl implements PayrollService {
         return tax;
     }
 
-    @Override public List<Payroll> getAllPayrolls() { return payrollRepo.findAll(); }
+    @Override public List<Payroll>getAllPayrolls() { return payrollRepo.findAll(); }
     @Override public Payroll savePayroll(Payroll p) { return payrollRepo.save(p); }
     @Override public Payroll getPayrollById(Integer id) { return payrollRepo.findById(id).orElse(null); }
     @Override public void deletePayroll(Integer id) { payrollRepo.deleteById(id); }

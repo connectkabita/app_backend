@@ -35,7 +35,6 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        // ⚠️ Reminder: Use BCryptPasswordEncoder for production environments
         return NoOpPasswordEncoder.getInstance();
     }
 
@@ -71,65 +70,61 @@ public class SecurityConfig {
                            1. PUBLIC ENDPOINTS
                            ============================================================ */
                         .requestMatchers("/api/auth/**", "/error").permitAll()
-                        .requestMatchers("/api/users/forgot-password/**",
-                                "/api/users/reset-password/**").permitAll()
+                        .requestMatchers("/api/users/forgot-password/**", "/api/users/reset-password/**").permitAll()
                         .requestMatchers("/api/dashboard/**").permitAll()
 
                         /* ============================================================
-                           2. LEAVE MANAGEMENT (FIXED: Added Employee Access)
+                           2. ACCOUNTING & REPORTING (UPDATED FOR DASHBOARD & SUMMARY)
                            ============================================================ */
-                        // Allow employees to fetch types and their own balance
-                        .requestMatchers(HttpMethod.GET, "/api/leave-types/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_EMPLOYEE")
-                        .requestMatchers(HttpMethod.GET, "/api/leave-balance/employee/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_EMPLOYEE")
-
-                        // Allow employees to view their history and submit requests
-                        .requestMatchers("/api/employee-leaves/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_EMPLOYEE")
+                        .requestMatchers(
+                                "/api/payrolls/summary", // Matches your Frontend Salary.jsx fetch
+                                "/api/payrolls/**",
+                                "/api/reports/**",
+                                "/api/tax-slabs/**",
+                                "/api/salary-summary/**"
+                        ).hasAnyAuthority("ROLE_ADMIN", "ROLE_ACCOUNTANT", "ADMIN", "ACCOUNTANT")
 
                         /* ============================================================
-                           3. SHARED MODULES (ADMIN, ACCOUNTANT, EMPLOYEE)
+                           3. SHARED READ-ONLY ACCESS (UPDATED TO INCLUDE LEAVES & ATTENDANCE)
                            ============================================================ */
-                        .requestMatchers("/api/attendance/**")
-                        .hasAnyAuthority("ROLE_ADMIN", "ROLE_ACCOUNTANT", "ROLE_EMPLOYEE")
-
-                        /* ============================================================
-                           4. ACCOUNTING & MANAGEMENT (ADMIN, ACCOUNTANT)
-                           ============================================================ */
-                        .requestMatchers("/api/payrolls/**", "/api/reports/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_ACCOUNTANT")
-
-                        // Read-only access for Accountants on Employees, Depts, and Designations
                         .requestMatchers(HttpMethod.GET,
                                 "/api/employees/**",
-                                "/api/departments/**",
-                                "/api/designations/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_ACCOUNTANT")
 
-                        // Read-only access for Accountants on Salary Components
-                        .requestMatchers(HttpMethod.GET,
-                                "/api/salary-components/**",
-                                "/api/grade-salary-components/**",
-                                "/api/employee-salary-components/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_ACCOUNTANT")
-
-                        /* ============================================================
-                           5. ROLE-SPECIFIC PANELS
-                           ============================================================ */
-                        .requestMatchers("/api/employee/**").hasAuthority("ROLE_EMPLOYEE")
-                        .requestMatchers("/api/accountant/**").hasAuthority("ROLE_ACCOUNTANT")
-                        .requestMatchers("/api/admin/**").hasAuthority("ROLE_ADMIN")
-
-                        /* ============================================================
-                           6. ADMIN ONLY (WRITE ACCESS & FALLBACK)
-                           ============================================================ */
-                        // Any remaining POST/PUT/DELETE on core modules defaults to ADMIN
-                        .requestMatchers("/api/employees/**",
                                 "/api/departments/**",
                                 "/api/designations/**",
-                                "/api/salary-components/**").hasAuthority("ROLE_ADMIN")
-
-                        // Global catch-all for /api/** (Admins)
-                        .requestMatchers("/api/**").hasAuthority("ROLE_ADMIN")
+                                "/api/salary-components/**",
+                                "/api/grade-salary-components/**",
+                                "/api/employee-salary-components/**",
+                                "/api/attendance/**",
+                                "/api/leaves/**", // Allow reading general leave data
+                                "/api/leave-types/**"
+                        ).hasAnyAuthority("ROLE_ADMIN", "ROLE_ACCOUNTANT", "ROLE_EMPLOYEE", "ADMIN", "ACCOUNTANT", "EMPLOYEE")
 
                         /* ============================================================
-                           7. FINAL FALLBACK
+                           4. LEAVE & EMPLOYEE SELF-SERVICE
                            ============================================================ */
+                        .requestMatchers(HttpMethod.GET, "/api/leave-balance/employee/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_EMPLOYEE", "ADMIN", "EMPLOYEE")
+                        .requestMatchers("/api/employee-leaves/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_EMPLOYEE", "ADMIN", "EMPLOYEE")
+                        .requestMatchers("/api/employee/**").hasAnyAuthority("ROLE_EMPLOYEE", "ROLE_ADMIN", "EMPLOYEE", "ADMIN")
+
+                        /* ============================================================
+                           5. SPECIFIC PANEL AUTHORIZATION
+                           ============================================================ */
+                        .requestMatchers("/api/accountant/**").hasAnyAuthority("ROLE_ACCOUNTANT", "ROLE_ADMIN", "ACCOUNTANT", "ADMIN")
+                        .requestMatchers("/api/admin/**").hasAnyAuthority("ROLE_ADMIN", "ADMIN")
+
+                        /* ============================================================
+                           6. GLOBAL FALLBACK & WRITE RESTRICTIONS
+                           ============================================================ */
+                        // Allow Accountants to process Payrolls and Tax updates
+                        .requestMatchers(HttpMethod.POST, "/api/payrolls/**", "/api/salary-summary/**", "/api/tax-slabs/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_ACCOUNTANT", "ADMIN", "ACCOUNTANT")
+                        .requestMatchers(HttpMethod.PUT, "/api/payrolls/**", "/api/salary-summary/**", "/api/tax-slabs/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_ACCOUNTANT", "ADMIN", "ACCOUNTANT")
+
+                        // Restrict sensitive deletions and general system config to ADMIN
+                        .requestMatchers(HttpMethod.POST, "/api/**").hasAnyAuthority("ROLE_ADMIN", "ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/**").hasAnyAuthority("ROLE_ADMIN", "ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/**").hasAnyAuthority("ROLE_ADMIN", "ADMIN")
+
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
@@ -140,18 +135,12 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of(
-                "http://localhost:5173",
-                "http://localhost:3000"
-        ));
-        config.setAllowedMethods(Arrays.asList(
-                "GET", "POST", "PUT", "DELETE", "OPTIONS"
-        ));
+        config.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:3000"));
+        config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
 
-        UrlBasedCorsConfigurationSource source =
-                new UrlBasedCorsConfigurationSource();
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
         return source;
     }

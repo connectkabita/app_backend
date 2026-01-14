@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
@@ -15,6 +16,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -53,11 +56,19 @@ public class JwtFilter extends OncePerRequestFilter {
                 UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
                 if (jwtUtils.validateToken(token)) {
+                    // Logic: Map authorities to ensure they have ROLE_ prefix for SecurityConfig matching
+                    List<SimpleGrantedAuthority> authorities = userDetails.getAuthorities().stream()
+                            .map(grantedAuthority -> {
+                                String auth = grantedAuthority.getAuthority();
+                                return new SimpleGrantedAuthority(auth.startsWith("ROLE_") ? auth : "ROLE_" + auth);
+                            })
+                            .collect(Collectors.toList());
+
                     UsernamePasswordAuthenticationToken authentication =
                             new UsernamePasswordAuthenticationToken(
                                     userDetails,
                                     null,
-                                    userDetails.getAuthorities()
+                                    authorities
                             );
 
                     authentication.setDetails(
@@ -75,7 +86,6 @@ public class JwtFilter extends OncePerRequestFilter {
         } catch (JwtException | IllegalArgumentException ex) {
             sendUnauthorized(response, "INVALID_TOKEN", "JWT token is invalid.");
         } catch (Exception ex) {
-            // General catch-all to prevent 400 Bad Request
             sendUnauthorized(response, "AUTH_ERROR", "An error occurred during authentication.");
         }
     }
@@ -86,16 +96,12 @@ public class JwtFilter extends OncePerRequestFilter {
             String message
     ) throws IOException {
         SecurityContextHolder.clearContext();
-
-        // IMPORTANT: Once we write to the response, we do NOT call filterChain.doFilter()
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setContentType("application/json");
-
         String jsonResponse = String.format(
                 "{\"error\": \"%s\", \"message\": \"%s\"}",
                 error, message
         );
-
         response.getWriter().write(jsonResponse);
         response.getWriter().flush();
     }

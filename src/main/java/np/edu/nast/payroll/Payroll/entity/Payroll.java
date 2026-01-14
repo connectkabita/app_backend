@@ -1,5 +1,6 @@
 package np.edu.nast.payroll.Payroll.entity;
 
+import com.fasterxml.jackson.annotation.JsonProperty; // FIXED: Added missing import
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -21,8 +22,21 @@ import java.time.LocalDateTime;
 @Builder
 public class Payroll {
 
+    // Matches 'EMPLOYEE NAME' column in frontend
+    @JsonProperty("employeeName")
+    public String getEmployeeName() {
+        return this.employee != null ? this.employee.getFirstName() + " " + this.employee.getLastName() : "N/A";
+    }
+
+    // Matches 'id' used for verification operations
+    @JsonProperty("id")
+    public Integer getId() {
+        return this.payrollId;
+    }
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "payroll_id")
     private Integer payrollId;
 
     @ManyToOne(fetch = FetchType.EAGER, optional = false)
@@ -33,10 +47,6 @@ public class Payroll {
     @JoinColumn(name = "processed_by", nullable = false)
     private User processedBy;
 
-    /* =========================================================
-       FIX: Changed "account_id" to "payment_account_id"
-       to match your MySQL table's mandatory column name.
-       ========================================================= */
     @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "payment_account_id", nullable = false)
     private BankAccount paymentAccount;
@@ -49,13 +59,13 @@ public class Payroll {
     @JoinColumn(name = "payment_method_id", nullable = false)
     private PaymentMethod paymentMethod;
 
-    @Column(nullable = true)
+    @Column(name = "pay_period_start")
     private LocalDate payPeriodStart;
 
-    @Column(nullable = true)
+    @Column(name = "pay_period_end")
     private LocalDate payPeriodEnd;
 
-    @Column(nullable = true)
+    @Column(name = "pay_date")
     private LocalDate payDate;
 
     @Column(nullable = false)
@@ -77,7 +87,7 @@ public class Payroll {
     private String status;
 
     @Builder.Default
-    @Column(nullable = false, updatable = false)
+    @Column(name = "processed_at", nullable = false, updatable = false)
     private LocalDateTime processedAt = LocalDateTime.now();
 
     @PrePersist

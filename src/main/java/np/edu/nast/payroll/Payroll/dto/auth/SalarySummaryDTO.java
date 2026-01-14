@@ -1,21 +1,32 @@
 package np.edu.nast.payroll.Payroll.dto.auth;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import java.util.List;
 
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class SalarySummaryDTO {
-    public double totalGross;
-    public double totalDeductions;
-    public double totalNet;
-    public List<DeptBreakdown> departments;
+    // Standard Summary Fields
+    private double totalGross;
+    private double totalDeductions;
+    private double totalNet;
+    private List<DeptBreakdown> departments;
 
+    // Command Center Dashboard Fields
+    private double monthlyPayrollTotal;
+    private String payrollStatus;
+    private int compliancePercentage;
+    private int pendingVerifications;
+
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
     public static class DeptBreakdown {
-        public String name;
-        public double net;
-        public double tax;
-
-        public DeptBreakdown(String name, double net, double tax) {
-            this.name = name;
-            this.net = net;
-            this.tax = tax;
-        }
+        private String name;
+        private double net;
+        private double tax;
     }
 }
