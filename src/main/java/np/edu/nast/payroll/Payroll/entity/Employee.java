@@ -7,6 +7,8 @@ import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.List;
 
 @Entity
 @Table(name = "employee")
@@ -77,6 +79,10 @@ public class Employee {
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+
+    @OneToMany(mappedBy = "employee", fetch = FetchType.LAZY)
+    private List<BankAccount> bankAccounts;
+
     @PrePersist
     public void onCreate() {
         this.createdAt = LocalDateTime.now();
@@ -87,4 +93,7 @@ public class Employee {
         if (this.allowances == null) this.allowances = 0.0;
         if (this.deductions == null) this.deductions = 0.0;
     }
+
+
+
 }

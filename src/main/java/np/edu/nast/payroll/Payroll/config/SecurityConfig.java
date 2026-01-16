@@ -74,6 +74,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/users/forgot-password/**",
                                 "/api/users/reset-password/**").permitAll()
                         .requestMatchers("/api/dashboard/**").permitAll()
+                        // allow employee to see salary
+                        .requestMatchers("/api/salary-analytics/**").authenticated()
 
                         /* ============================================================
                            2. LEAVE MANAGEMENT (FIXED: Added Employee Access)
@@ -84,6 +86,7 @@ public class SecurityConfig {
 
                         // Allow employees to view their history and submit requests
                         .requestMatchers("/api/employee-leaves/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_EMPLOYEE")
+
 
                         /* ============================================================
                            3. SHARED MODULES (ADMIN, ACCOUNTANT, EMPLOYEE)
