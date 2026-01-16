@@ -91,7 +91,7 @@ public class PayrollServiceImpl implements PayrollService {
 
     // NEW: Method to dispatch email to employee
     @Transactional
-    @PreAuthorize("hasAnyRole('ADMIN', 'HR')")
+    @PreAuthorize("hasAnyRole('ADMIN')")
     public void sendEmailSlip(Integer payrollId) {
         Payroll payroll = payrollRepo.findById(payrollId)
                 .orElseThrow(() -> new RuntimeException("Payroll record not found"));

@@ -22,7 +22,6 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
-import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -47,82 +46,39 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(
-            AuthenticationConfiguration configuration
-    ) throws Exception {
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
         return configuration.getAuthenticationManager();
     }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-
         http
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .sessionManagement(session ->
-                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                )
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider())
-
                 .authorizeHttpRequests(auth -> auth
-
-                        /* ============================================================
-                           1. PUBLIC ENDPOINTS
-                           ============================================================ */
+                        // 1. PUBLIC & PREFLIGHT (Always First)
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/**", "/error").permitAll()
                         .requestMatchers("/api/users/forgot-password/**", "/api/users/reset-password/**").permitAll()
-                        .requestMatchers("/api/dashboard/**").permitAll()
 
-                        /* ============================================================
-                           2. ACCOUNTING & REPORTING (UPDATED FOR DASHBOARD & SUMMARY)
-                           ============================================================ */
-                        .requestMatchers(
-                                "/api/payrolls/summary", // Matches your Frontend Salary.jsx fetch
-                                "/api/payrolls/**",
-                                "/api/reports/**",
-                                "/api/tax-slabs/**",
-                                "/api/salary-summary/**"
-                        ).hasAnyAuthority("ROLE_ADMIN", "ROLE_ACCOUNTANT", "ADMIN", "ACCOUNTANT")
+                        // 2. DASHBOARD (Must be above global /api/**)
+                        .requestMatchers("/api/dashboard/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_ACCOUNTANT", "ROLE_EMPLOYEE", "ADMIN", "ACCOUNTANT", "EMPLOYEE")
 
-                        /* ============================================================
-                           3. SHARED READ-ONLY ACCESS (UPDATED TO INCLUDE LEAVES & ATTENDANCE)
-                           ============================================================ */
-                        .requestMatchers(HttpMethod.GET,
-                                "/api/employees/**",
+                        // 3. LEAVE MANAGEMENT
+                        .requestMatchers(HttpMethod.GET, "/api/employee-leaves/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_ACCOUNTANT", "ROLE_EMPLOYEE", "ADMIN", "ACCOUNTANT", "EMPLOYEE")
+                        .requestMatchers(HttpMethod.PATCH, "/api/employee-leaves/**").hasAnyAuthority("ROLE_ADMIN", "ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/employee-leaves/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_EMPLOYEE", "ADMIN", "EMPLOYEE")
 
-                                "/api/departments/**",
-                                "/api/designations/**",
-                                "/api/salary-components/**",
-                                "/api/grade-salary-components/**",
-                                "/api/employee-salary-components/**",
-                                "/api/attendance/**",
-                                "/api/leaves/**", // Allow reading general leave data
-                                "/api/leave-types/**"
-                        ).hasAnyAuthority("ROLE_ADMIN", "ROLE_ACCOUNTANT", "ROLE_EMPLOYEE", "ADMIN", "ACCOUNTANT", "EMPLOYEE")
+                        // 4. ATTENDANCE
+                        .requestMatchers("/api/attendance/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_EMPLOYEE", "ADMIN", "EMPLOYEE")
 
-                        /* ============================================================
-                           4. LEAVE & EMPLOYEE SELF-SERVICE
-                           ============================================================ */
-                        .requestMatchers(HttpMethod.GET, "/api/leave-balance/employee/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_EMPLOYEE", "ADMIN", "EMPLOYEE")
-                        .requestMatchers("/api/employee-leaves/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_EMPLOYEE", "ADMIN", "EMPLOYEE")
-                        .requestMatchers("/api/employee/**").hasAnyAuthority("ROLE_EMPLOYEE", "ROLE_ADMIN", "EMPLOYEE", "ADMIN")
-
-                        /* ============================================================
-                           5. SPECIFIC PANEL AUTHORIZATION
-                           ============================================================ */
-                        .requestMatchers("/api/accountant/**").hasAnyAuthority("ROLE_ACCOUNTANT", "ROLE_ADMIN", "ACCOUNTANT", "ADMIN")
-                        .requestMatchers("/api/admin/**").hasAnyAuthority("ROLE_ADMIN", "ADMIN")
-
-                        /* ============================================================
-                           6. GLOBAL FALLBACK & WRITE RESTRICTIONS
-                           ============================================================ */
-                        // Allow Accountants to process Payrolls and Tax updates
-                        .requestMatchers(HttpMethod.POST, "/api/payrolls/**", "/api/salary-summary/**", "/api/tax-slabs/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_ACCOUNTANT", "ADMIN", "ACCOUNTANT")
-                        .requestMatchers(HttpMethod.PUT, "/api/payrolls/**", "/api/salary-summary/**", "/api/tax-slabs/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_ACCOUNTANT", "ADMIN", "ACCOUNTANT")
-
-                        // Restrict sensitive deletions and general system config to ADMIN
+                        // 5. GLOBAL FALLBACKS (Always Last)
+                        .requestMatchers(HttpMethod.GET, "/api/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/**").hasAnyAuthority("ROLE_ADMIN", "ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/**").hasAnyAuthority("ROLE_ADMIN", "ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/api/**").hasAnyAuthority("ROLE_ADMIN", "ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/**").hasAnyAuthority("ROLE_ADMIN", "ADMIN")
 
                         .anyRequest().authenticated()
@@ -131,17 +87,20 @@ public class SecurityConfig {
 
         return http.build();
     }
-
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:3000"));
-        config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        config.setAllowedHeaders(List.of("*"));
-        config.setAllowCredentials(true);
+        CorsConfiguration configuration = new CorsConfiguration();
+        // Allow the React/Vite development ports
+        configuration.setAllowedOriginPatterns(Arrays.asList("http://localhost:3000", "http://localhost:5173"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        // Using "*" for headers is safest to avoid CORS mismatch
+        configuration.setAllowedHeaders(Arrays.asList("*"));
+        configuration.setExposedHeaders(Arrays.asList("Authorization", "x-auth-token"));
+        configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", config);
+        source.registerCorsConfiguration("/**", configuration);
         return source;
     }
 }

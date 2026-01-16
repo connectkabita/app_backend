@@ -8,7 +8,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
@@ -16,8 +15,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -35,7 +32,7 @@ public class JwtFilter extends OncePerRequestFilter {
 
         final String authHeader = request.getHeader("Authorization");
 
-        // 1. Skip filter if no Bearer token
+        // 1. Skip filter if header is missing or incorrect
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
@@ -43,7 +40,7 @@ public class JwtFilter extends OncePerRequestFilter {
 
         final String token = authHeader.substring(7);
 
-        // 2. Handle cases where frontend sends "Bearer null" or "Bearer undefined"
+        // 2. Handle invalid frontend strings
         if (token.isBlank() || "null".equalsIgnoreCase(token) || "undefined".equalsIgnoreCase(token)) {
             filterChain.doFilter(request, response);
             return;
@@ -56,53 +53,40 @@ public class JwtFilter extends OncePerRequestFilter {
                 UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
                 if (jwtUtils.validateToken(token)) {
-                    // Logic: Map authorities to ensure they have ROLE_ prefix for SecurityConfig matching
-                    List<SimpleGrantedAuthority> authorities = userDetails.getAuthorities().stream()
-                            .map(grantedAuthority -> {
-                                String auth = grantedAuthority.getAuthority();
-                                return new SimpleGrantedAuthority(auth.startsWith("ROLE_") ? auth : "ROLE_" + auth);
-                            })
-                            .collect(Collectors.toList());
-
+                    // Pass authorities directly from UserDetails to maintain the ROLE_ prefix
                     UsernamePasswordAuthenticationToken authentication =
                             new UsernamePasswordAuthenticationToken(
                                     userDetails,
                                     null,
-                                    authorities
+                                    userDetails.getAuthorities()
                             );
 
-                    authentication.setDetails(
-                            new WebAuthenticationDetailsSource().buildDetails(request)
-                    );
-
+                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authentication);
+
+                    // Optional: Debug log to verify authorities in console
+                    // System.out.println("Authenticated: " + username + " with " + userDetails.getAuthorities());
                 }
             }
-            // Continue the chain if authentication is successful
-            filterChain.doFilter(request, response);
-
         } catch (ExpiredJwtException ex) {
-            sendUnauthorized(response, "TOKEN_EXPIRED", "JWT token has expired. Please login again.");
+            sendUnauthorized(response, "TOKEN_EXPIRED", "Session expired. Please login again.");
+            return; // Stop the chain
         } catch (JwtException | IllegalArgumentException ex) {
-            sendUnauthorized(response, "INVALID_TOKEN", "JWT token is invalid.");
+            sendUnauthorized(response, "INVALID_TOKEN", "Invalid security token.");
+            return; // Stop the chain
         } catch (Exception ex) {
-            sendUnauthorized(response, "AUTH_ERROR", "An error occurred during authentication.");
+            sendUnauthorized(response, "AUTH_ERROR", "Authentication failed.");
+            return; // Stop the chain
         }
+
+        filterChain.doFilter(request, response);
     }
 
-    private void sendUnauthorized(
-            HttpServletResponse response,
-            String error,
-            String message
-    ) throws IOException {
+    private void sendUnauthorized(HttpServletResponse response, String error, String message) throws IOException {
         SecurityContextHolder.clearContext();
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setContentType("application/json");
-        String jsonResponse = String.format(
-                "{\"error\": \"%s\", \"message\": \"%s\"}",
-                error, message
-        );
+        String jsonResponse = String.format("{\"error\": \"%s\", \"message\": \"%s\"}", error, message);
         response.getWriter().write(jsonResponse);
-        response.getWriter().flush();
     }
 }

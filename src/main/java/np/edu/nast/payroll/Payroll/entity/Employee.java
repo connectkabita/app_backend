@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
+import jakarta.persistence.Transient; // Ensure this import is present
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -20,11 +21,12 @@ public class Employee {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "emp_id") // Matches your DB: emp_id
     private Integer empId;
 
     @OneToOne(fetch = FetchType.EAGER, optional = true)
     @JoinColumn(name = "user_id", referencedColumnName = "userId", nullable = true)
-    @JsonIgnore // 🔥 CRITICAL FIX
+    @JsonIgnore
     private User user;
 
     @Column(nullable = false)
@@ -55,17 +57,10 @@ public class Employee {
     @Column(nullable = false)
     private LocalDate joiningDate;
 
-    @Column(nullable = false)
-    private String address;
+    @Column(nullable = false)    private String address;
 
     @Column(nullable = false)
     private Double basicSalary;
-
-    @Column(nullable = false)
-    private Double allowances;
-
-    @Column(nullable = false)
-    private Double deductions;
 
     @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @JoinColumn(name = "dept_id", nullable = false)
@@ -76,15 +71,41 @@ public class Employee {
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
+    @Transient
+    private String password; // This exists in Java only, not the Database
 
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+    /**
+     * This method runs automatically before the entity is saved to the database.
+     */
     @PrePersist
     public void onCreate() {
+        // Automatically set the creation timestamp
         this.createdAt = LocalDateTime.now();
-        if (this.isActive == null) this.isActive = true;
-        if (this.maritalStatus == null) this.maritalStatus = "SINGLE";
-        if (this.employmentStatus == null) this.employmentStatus = "FULL_TIME";
-        if (this.basicSalary == null) this.basicSalary = 0.0;
-        if (this.allowances == null) this.allowances = 0.0;
-        if (this.deductions == null) this.deductions = 0.0;
+
+        // 🔥 NEW: Set joiningDate to current date if not provided by frontend
+        if (this.joiningDate == null) {
+            this.joiningDate = LocalDate.now();
+        }
+
+        // Set default values if fields are null
+        if (this.isActive == null) {
+            this.isActive = true;
+        }
+        if (this.maritalStatus == null) {
+            this.maritalStatus = "SINGLE";
+        }
+        if (this.employmentStatus == null) {
+            this.employmentStatus = "FULL_TIME";
+        }
+        if (this.basicSalary == null) {
+            this.basicSalary = 0.0;
+        }
     }
 }
