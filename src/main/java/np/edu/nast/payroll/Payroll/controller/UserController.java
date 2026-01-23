@@ -16,7 +16,18 @@ public class UserController {
     @Autowired
     private UserService userService;
 
-    // This handles GET http://localhost:8080/api/users/14
+    // NEW LOGIC: Support for Frontend Email Verification
+    @GetMapping("/search")
+    public ResponseEntity<?> searchUserByEmail(@RequestParam String email) {
+        try {
+            // Assumes userService has findByEmail logic
+            User user = userService.getByEmail(email);
+            return ResponseEntity.ok(user);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
+        }
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<User> getUserById(@PathVariable Integer id) {
         try {

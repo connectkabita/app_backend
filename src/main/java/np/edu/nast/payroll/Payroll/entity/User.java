@@ -2,6 +2,7 @@ package np.edu.nast.payroll.Payroll.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
@@ -23,8 +24,9 @@ public class User {
     @Column(nullable = false, unique = true)
     private String username;
 
+    // FIX: Change @JsonIgnore to this so the backend can "read" the password from the JSON request
     @Column(nullable = false)
-    @JsonIgnore
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
 
     @Column(nullable = false, unique = true)
@@ -37,10 +39,10 @@ public class User {
 
     private String status;
 
-    // CRITICAL: This mapping MUST be ignored to prevent 500 Error
+    // Mapping preserved to prevent 500 error
     @OneToOne(mappedBy = "user")
     @JsonIgnore
-    private Employee employee;;
+    private Employee employee; // Fixed double semicolon
 
     @Column(name = "reset_token")
     @JsonIgnore

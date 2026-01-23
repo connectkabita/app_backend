@@ -3,6 +3,7 @@ package np.edu.nast.payroll.Payroll.entity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Size;
 import lombok.*;
 
 import java.time.LocalDate;
@@ -36,7 +37,9 @@ public class Employee {
     @Column(nullable = false, unique = true)
     private String email;
 
-    @Column(nullable = false)
+    // Logic Update: Changed to String to handle 10 digits/leading zeros correctly
+    @Column(length = 10, nullable = false)
+    @Size(min = 10, max = 10, message = "Contact number must be exactly 10 digits")
     private String contact;
 
     @Column(nullable = false)
