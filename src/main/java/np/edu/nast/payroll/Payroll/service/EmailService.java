@@ -20,4 +20,16 @@ public class EmailService {
         message.setText("Your verification code is: " + otp);
         mailSender.send(message);
     }
+
+    // NEW: Method for Payslips
+    public void sendPayslipEmail(String to, String firstName, Double netSalary, String payDate) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(to);
+        message.setSubject("Monthly Payslip - " + payDate);
+        message.setText("Dear " + firstName + ",\n\n" +
+                "Your payroll for " + payDate + " has been processed.\n" +
+                "Net Amount Credited: Rs. " + netSalary + "\n\n" +
+                "Regards,\nPayroll Admin");
+        mailSender.send(message);
+    }
 }

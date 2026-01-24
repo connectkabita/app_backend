@@ -6,7 +6,10 @@ import java.util.Map;
 
 public interface PayrollService {
     List<Payroll> getAllPayrolls();
-    // This fixes the red error in PayrollController
     Payroll processPayroll(Map<String, Object> payload);
     Payroll updateStatus(Integer id, String status);
+
+    // Define these to fix Controller compilation errors
+    List<Payroll> getPayrollByEmployeeId(Integer empId);
+    Payroll voidPayroll(Integer id);
 }
