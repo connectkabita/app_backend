@@ -1,5 +1,6 @@
 package np.edu.nast.payroll.Payroll.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
@@ -20,6 +21,7 @@ public class BankAccount {
     // Employee must exist before bank account creation
     @ManyToOne(optional = false)
     @JoinColumn(name = "emp_id", nullable = false)
+    @JsonIgnore
     private Employee employee;
 
     // Bank must exist before bank account creation
@@ -27,7 +29,7 @@ public class BankAccount {
     @JoinColumn(name = "bank_id", nullable = false)
     private Bank bank;
 
-    @Column(nullable = false, unique = true)
+    @Column(name = "account_number", nullable = false, unique = true)
     private String accountNumber;
 
     @Column(nullable = false)

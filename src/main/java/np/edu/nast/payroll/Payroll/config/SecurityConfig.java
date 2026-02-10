@@ -59,34 +59,39 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider())
                 .authorizeHttpRequests(auth -> auth
-                        /* 1. PUBLIC */
+                        /* 1. PUBLIC & ESEWA CALLBACKS */
                         .requestMatchers("/api/auth/**", "/error").permitAll()
-// Inside SecurityConfig.java .authorizeHttpRequests block
-                                .requestMatchers("/api/employee/dashboard/**").hasAnyAuthority("ROLE_USER", "ROLE_EMPLOYEE", "ROLE_ADMIN", "ADMIN", "EMPLOYEE")
-                        /* 2. METADATA & PROFILE */
+                        // Public access for eSewa return URL because no JWT is present during redirect
+                        .requestMatchers("/api/esewa/success/**", "/api/esewa/failure/**").permitAll()
+
+                        /* 2. DASHBOARD & PROFILE */
+                        .requestMatchers("/api/employee/dashboard/**").hasAnyAuthority("ROLE_USER", "ROLE_EMPLOYEE", "ROLE_ADMIN", "ADMIN", "EMPLOYEE")
                         .requestMatchers(HttpMethod.GET, "/api/departments/**", "/api/designations/**", "/api/employees/**", "/api/users/**").authenticated()
 
-                        /* 3. ATTENDANCE (Specific Employee Allowances) */
-                        // Allowing employees to POST (Check-in) and PUT (Check-out)
+                        /* 3. ESEWA PAYMENT INITIATION */
+                        // Only Admin and Accountant can trigger the payment process
+                        .requestMatchers("/api/esewa/initiate/**").hasAnyAuthority("ROLE_ADMIN", "ADMIN", "ROLE_ACCOUNTANT", "ACCOUNTANT")
+
+                        /* 4. ATTENDANCE */
                         .requestMatchers(HttpMethod.POST, "/api/attendance/**").hasAnyAuthority("ROLE_ADMIN", "ADMIN", "ROLE_EMPLOYEE", "EMPLOYEE")
                         .requestMatchers(HttpMethod.PUT, "/api/attendance/**").hasAnyAuthority("ROLE_ADMIN", "ADMIN", "ROLE_EMPLOYEE", "EMPLOYEE")
                         .requestMatchers(HttpMethod.GET, "/api/attendance/**").hasAnyAuthority("ROLE_ADMIN", "ADMIN", "ROLE_ACCOUNTANT", "ACCOUNTANT", "ROLE_EMPLOYEE", "EMPLOYEE")
 
-                        /* 4. LEAVE & ANALYTICS */
+                        /* 5. LEAVE & ANALYTICS */
                         .requestMatchers(HttpMethod.GET, "/api/leave-types/**", "/api/leave-balance/**").permitAll()
                         .requestMatchers("/api/employee-leaves/**", "/api/salary-analytics/**")
                         .hasAnyAuthority("ROLE_ADMIN", "ADMIN", "ROLE_EMPLOYEE", "EMPLOYEE")
 
-                        /* 5. PAYROLL & REPORTS */
+                        /* 6. PAYROLL & REPORTS */
                         .requestMatchers("/api/payrolls/**", "/api/reports/**")
                         .hasAnyAuthority("ROLE_ADMIN", "ADMIN", "ROLE_ACCOUNTANT", "ACCOUNTANT")
 
-                        /* 6. GLOBAL ADMIN WRITE PROTECTION */
+                        /* 7. GLOBAL ADMIN WRITE PROTECTION */
                         .requestMatchers(HttpMethod.POST, "/api/**").hasAnyAuthority("ROLE_ADMIN", "ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/**").hasAnyAuthority("ROLE_ADMIN", "ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/**").hasAnyAuthority("ROLE_ADMIN", "ADMIN")
 
-                        /* 7. FALLBACK */
+                        /* 8. FALLBACK */
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
@@ -98,13 +103,8 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:3000"));
-
-        // UPDATE: Added "PATCH" to the list of allowed methods
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-
-        // UPDATE: Added "Origin" and "X-Requested-With" to ensure all browsers are happy
         config.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"));
-
         config.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

@@ -24,6 +24,10 @@ public class DesignationServiceImpl implements DesignationService {
         if (designation == null || designation.getDesignationTitle() == null || designation.getDesignationTitle().isBlank()) {
             throw new IllegalArgumentException("Designation title must not be empty");
         }
+        // Ensure we don't save negative salary
+        if (designation.getBaseSalary() < 0) {
+            throw new IllegalArgumentException("Base salary cannot be negative");
+        }
         return designationRepository.save(designation);
     }
 
@@ -36,11 +40,18 @@ public class DesignationServiceImpl implements DesignationService {
             throw new IllegalArgumentException("Designation title must not be empty");
         }
 
+        // FIX: Changed == 0 to < 0 to allow 0 but block negative values
+        if (designation.getBaseSalary() < 0) {
+            throw new IllegalArgumentException("Base salary must be greater than or equal to 0");
+        }
+
         Designation existing = designationRepository.findById(designation.getDesignationId())
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Designation not found with ID: " + designation.getDesignationId()));
 
+        // UPDATED: Syncing both fields now
         existing.setDesignationTitle(designation.getDesignationTitle());
+        existing.setBaseSalary(designation.getBaseSalary()); // <--- THIS WAS MISSING
 
         return designationRepository.save(existing);
     }

@@ -40,8 +40,8 @@ public class MonthlyInfo {
     @Column(nullable = false)
     private String status;
 
-    @ManyToOne
-    @JoinColumn(name = "generated_by",  nullable = false)
+    @ManyToOne(fetch = FetchType.EAGER) // Ensure the user is loaded
+    @JoinColumn(name = "generated_by", nullable = false)
     private User generatedBy;
     @Column(nullable = false, updatable = false)
     private LocalDateTime generatedAt;

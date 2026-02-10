@@ -22,7 +22,7 @@ public class TaxSlabServiceImpl implements TaxSlabService {
     }
 
     @Override
-    public TaxSlab update(Long id, TaxSlab slab) {
+    public TaxSlab update(Integer id, TaxSlab slab) {
         TaxSlab existing = repo.findById(id)
                 .orElseThrow(() -> new RuntimeException("TaxSlab not found"));
 
@@ -39,12 +39,12 @@ public class TaxSlabServiceImpl implements TaxSlabService {
     }
 
     @Override
-    public void delete(Long id) {
+    public void delete(Integer id) {
         repo.deleteById(id);
     }
 
     @Override
-    public TaxSlab getById(Long id) {
+    public TaxSlab getById(Integer id) {
         return repo.findById(id)
                 .orElseThrow(() -> new RuntimeException("TaxSlab not found"));
     }

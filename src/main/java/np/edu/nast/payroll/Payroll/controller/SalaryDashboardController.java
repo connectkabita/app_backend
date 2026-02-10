@@ -1,13 +1,12 @@
 package np.edu.nast.payroll.Payroll.controller;
 
-// Correct the import to match your project folder structure (dto.auth)
 import np.edu.nast.payroll.Payroll.dto.auth.SalarySummaryDTO;
 import np.edu.nast.payroll.Payroll.dto.auth.CommandCenterDTO;
 import np.edu.nast.payroll.Payroll.entity.SalaryComponent;
 import np.edu.nast.payroll.Payroll.entity.Department;
 import np.edu.nast.payroll.Payroll.service.SalaryComponentService;
 import np.edu.nast.payroll.Payroll.service.DepartmentService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
@@ -16,13 +15,11 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/salary-summary")
 @CrossOrigin(origins = "http://localhost:5173")
+@RequiredArgsConstructor // Modern injection
 public class SalaryDashboardController {
 
-    @Autowired
-    private SalaryComponentService componentService;
-
-    @Autowired
-    private DepartmentService departmentService;
+    private final SalaryComponentService componentService;
+    private final DepartmentService departmentService;
 
     @GetMapping
     public SalarySummaryDTO getSummary() {
@@ -36,19 +33,16 @@ public class SalaryDashboardController {
         double totalDeductions = 0;
 
         for (Department dept : departments) {
-            // FIX: Access ID via the related componentType object to fix errors 35 and 39
+            // Logic: Components describe which department they belong to in the 'description'
+            // and we filter 'Basic Salary' as Gross and 'Income Tax' as Deduction
             double deptGross = components.stream()
-                    .filter(c -> c.getDescription() != null &&
-                            c.getDescription().equals(String.valueOf(dept.getDeptId())) &&
-                            c.getComponentType() != null &&
-                            c.getComponentType().getComponentTypeId() == 1)
+                    .filter(c -> String.valueOf(dept.getDeptId()).equals(c.getDescription()) &&
+                            c.getComponentName().equalsIgnoreCase("Basic Salary"))
                     .mapToDouble(SalaryComponent::getDefaultValue).sum();
 
             double deptTax = components.stream()
-                    .filter(c -> c.getDescription() != null &&
-                            c.getDescription().equals(String.valueOf(dept.getDeptId())) &&
-                            c.getComponentType() != null &&
-                            c.getComponentType().getComponentTypeId() == 3)
+                    .filter(c -> String.valueOf(dept.getDeptId()).equals(c.getDescription()) &&
+                            c.getComponentName().equalsIgnoreCase("Income Tax"))
                     .mapToDouble(SalaryComponent::getDefaultValue).sum();
 
             if (deptGross > 0 || deptTax > 0) {
@@ -56,7 +50,7 @@ public class SalaryDashboardController {
                 totalDeductions += deptTax;
                 dto.departments.add(new SalarySummaryDTO.DeptBreakdown(
                         dept.getDeptName(),
-                        deptGross - deptTax,
+                        deptGross - deptTax, // Net
                         deptTax
                 ));
             }
@@ -74,18 +68,20 @@ public class SalaryDashboardController {
         List<SalaryComponent> components = componentService.getAll();
         CommandCenterDTO dto = new CommandCenterDTO();
 
+        // Total Payroll is the sum of all "FIXED" salary components
         double totalPayroll = components.stream()
-                .filter(c -> c.getComponentType() != null && c.getComponentType().getComponentTypeId() == 1)
+                .filter(c -> "FIXED".equalsIgnoreCase(c.getCalculationMethod()))
                 .mapToDouble(SalaryComponent::getDefaultValue).sum();
 
-        long pendingCount = components.stream()
-                .filter(c -> c.getRequired() != null && c.getRequired())
+        // Compliance based on "Required" components
+        long requiredCount = components.stream()
+                .filter(c -> c.isRequired() != null && c.isRequired())
                 .count();
 
         dto.setMonthlyPayrollTotal(totalPayroll);
-        dto.setPayrollStatus("Processing");
+        dto.setPayrollStatus("Active");
         dto.setCompliancePercentage(100);
-        dto.setPendingVerifications((int) pendingCount);
+        dto.setPendingVerifications((int) requiredCount);
 
         return dto;
     }

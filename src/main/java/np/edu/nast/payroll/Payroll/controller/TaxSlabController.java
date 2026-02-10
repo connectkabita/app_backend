@@ -23,17 +23,17 @@ public class TaxSlabController {
     }
 
     @PutMapping("/{id}")
-    public TaxSlab update(@PathVariable Long id, @RequestBody TaxSlab slab) {
+    public TaxSlab update(@PathVariable Integer id, @RequestBody TaxSlab slab) {
         return service.update(id, slab);
     }
 
     @DeleteMapping("/{id}")
-    public void delete(@PathVariable Long id) {
+    public void delete(@PathVariable Integer id) {
         service.delete(id);
     }
 
     @GetMapping("/{id}")
-    public TaxSlab getById(@PathVariable Long id) {
+    public TaxSlab getById(@PathVariable Integer id) {
         return service.getById(id);
     }
 

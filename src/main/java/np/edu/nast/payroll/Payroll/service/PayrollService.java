@@ -6,10 +6,12 @@ import java.util.Map;
 
 public interface PayrollService {
     List<Payroll> getAllPayrolls();
-    Payroll processPayroll(Map<String, Object> payload);
-    Payroll updateStatus(Integer id, String status);
-
-    // Define these to fix Controller compilation errors
+    Payroll calculatePreview(Map<String, Object> payload);
+    Payroll processPayroll(Map<String, Object> payload); // Stage 1
+    void finalizePayroll(Integer payrollId, String transactionRef); // Stage 2
+    void rollbackPayroll(Integer payrollId);
     List<Payroll> getPayrollByEmployeeId(Integer empId);
+    Payroll updateStatus(Integer id, String status);
     Payroll voidPayroll(Integer id);
+    Payroll getPayrollById(Integer id);
 }

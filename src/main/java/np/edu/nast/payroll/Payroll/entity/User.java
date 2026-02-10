@@ -19,13 +19,14 @@ public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "user_id")
     private Integer userId;
 
-    @Column(nullable = false, unique = true)
+    @Column(name = "username",nullable = false, unique = true)
     private String username;
 
     // FIX: Change @JsonIgnore to this so the backend can "read" the password from the JSON request
-    @Column(nullable = false)
+    @Column(name = "password", nullable = false)
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
 
@@ -51,7 +52,7 @@ public class User {
     @Column(name = "token_expiry")
     @JsonIgnore
     private LocalDateTime tokenExpiry;
-
+    @Column(name = "created_at")
     private LocalDateTime createdAt;
 
     @PrePersist

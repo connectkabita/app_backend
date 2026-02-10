@@ -10,7 +10,6 @@ import np.edu.nast.payroll.Payroll.repository.EmployeeRepository;
 import np.edu.nast.payroll.Payroll.service.BankAccountService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.util.List;
 
 @Service
@@ -33,7 +32,6 @@ public class BankAccountServiceImpl implements BankAccountService {
 
     @Override
     public BankAccount create(BankAccount account) {
-        // FK null check
         if (account.getEmployee() == null || account.getEmployee().getEmpId() == null) {
             throw new IllegalArgumentException("Employee ID is required");
         }
@@ -41,20 +39,16 @@ public class BankAccountServiceImpl implements BankAccountService {
             throw new IllegalArgumentException("Bank ID is required");
         }
 
-        // FK existence check
         Employee employee = employeeRepo.findById(account.getEmployee().getEmpId())
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Employee not found with ID: " + account.getEmployee().getEmpId()));
+                .orElseThrow(() -> new ResourceNotFoundException("Employee not found with ID: " + account.getEmployee().getEmpId()));
 
         Bank bank = bankRepo.findById(account.getBank().getBankId())
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Bank not found with ID: " + account.getBank().getBankId()));
+                .orElseThrow(() -> new ResourceNotFoundException("Bank not found with ID: " + account.getBank().getBankId()));
 
-        // Attach managed entities
         account.setEmployee(employee);
         account.setBank(bank);
 
-        // Only one primary account per employee
+        // Maintain only one primary account per employee
         if (Boolean.TRUE.equals(account.getIsPrimary())) {
             repo.findByEmployeeEmpId(employee.getEmpId())
                     .forEach(existing -> {
@@ -71,11 +65,17 @@ public class BankAccountServiceImpl implements BankAccountService {
         BankAccount existing = repo.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("BankAccount not found with ID: " + id));
 
-        // Only update allowed fields
         existing.setAccountNumber(account.getAccountNumber());
         existing.setAccountType(account.getAccountType());
         existing.setCurrency(account.getCurrency());
         existing.setIsPrimary(account.getIsPrimary());
+
+        // Update bank if bankId is provided in nested object
+        if (account.getBank() != null && account.getBank().getBankId() != null) {
+            Bank bank = bankRepo.findById(account.getBank().getBankId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Bank not found"));
+            existing.setBank(bank);
+        }
 
         return repo.save(existing);
     }
@@ -101,10 +101,9 @@ public class BankAccountServiceImpl implements BankAccountService {
 
     @Override
     public List<BankAccount> findByEmployeeId(Integer empId) {
-        // Validate employee exists
-        Employee employee = employeeRepo.findById(empId)
-                .orElseThrow(() -> new ResourceNotFoundException("Employee not found with ID: " + empId));
-
+        if (!employeeRepo.existsById(empId)) {
+            throw new ResourceNotFoundException("Employee not found with ID: " + empId);
+        }
         return repo.findByEmployeeEmpId(empId);
     }
 }

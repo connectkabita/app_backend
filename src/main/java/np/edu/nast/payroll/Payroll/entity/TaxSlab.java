@@ -2,11 +2,16 @@ package np.edu.nast.payroll.Payroll.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+
 import java.time.LocalDate;
 
 @Entity
 @Table(name = "tax_slab")
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class TaxSlab {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -20,7 +25,8 @@ public class TaxSlab {
 
     @Column(nullable = false)
     private Double maxAmount;
-
+    @Column(nullable = false)
+    private Double previousLimit;
     @Column(nullable = false)
     private Double ratePercentage;
 

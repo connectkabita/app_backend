@@ -18,11 +18,6 @@ public class SalaryComponent {
 
     private String componentName;
 
-    // Foreign key to SalaryComponentType, cannot be null
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "component_type_id", nullable = false)
-    private SalaryComponentType componentType;
-
     @Column(nullable = false)
     private String calculationMethod; // fixed, percentage_of_basic, formula
 
@@ -36,9 +31,6 @@ public class SalaryComponent {
     private Boolean required;
 
     // Helper method to resolve the ID error in your Dashboard Controller
-    public Long getComponentTypeId() {
-        return (this.componentType != null) ? this.componentType.getComponentTypeId() : null;
-    }
 
     public Boolean isRequired() {
         return this.required;

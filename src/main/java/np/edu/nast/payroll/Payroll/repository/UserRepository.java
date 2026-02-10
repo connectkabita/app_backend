@@ -9,7 +9,8 @@ public interface UserRepository extends JpaRepository<User, Integer> {
 
     // Needed for Forgot Password
     Optional<User> findByEmailIgnoreCase(String email);
-
+    // This allows PayrollServiceImpl to find the logged-in admin by their email
+    Optional<User> findByEmail(String email);
     // Needed for Reset Password
     Optional<User> findByResetToken(String resetToken);
 }
