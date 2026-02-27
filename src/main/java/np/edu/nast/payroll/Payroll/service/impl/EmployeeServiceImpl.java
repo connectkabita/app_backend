@@ -38,15 +38,27 @@ public class EmployeeServiceImpl implements EmployeeService {
         this.bankAccountRepo = bankAccountRepo;
     }
 
+    /**
+     * FIX: Implementation of the method that was missing in your build.
+     * This bridges the Security Username (from JWT) to the Employee ID.
+     */
     @Override
+    @Transactional(readOnly = true)
+    public Integer findIdByUsername(String username) {
+        return employeeRepo.findByUser_Username(username)
+                .map(Employee::getEmpId)
+                .orElseThrow(() -> new ResourceNotFoundException("Employee profile not found for user: " + username));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public Employee getByUserId(Integer userId) {
-        userRepo.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User account not found with ID: " + userId));
         return employeeRepo.findByUser_UserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("No Employee profile linked to User ID: " + userId));
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Map<String, Object> getDashboardStats(Integer id) {
         Employee emp = employeeRepo.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Employee not found with id: " + id));
@@ -63,58 +75,37 @@ public class EmployeeServiceImpl implements EmployeeService {
         }
 
         Map<String, Object> stats = new HashMap<>();
-        stats.put("lastSalary", emp.getBasicSalary() != null ? emp.getBasicSalary() : 0);
+        stats.put("lastSalary", emp.getBasicSalary() != null ? emp.getBasicSalary() : 0.0);
         stats.put("remainingLeaves", 12);
         stats.put("attendanceSummary", new AttendanceSummaryDTO(present, absent, leave));
         return stats;
     }
 
     @Override
-    public Employee getByEmail(String email) {
-        return employeeRepo.findByUser_Email(email)
-                .or(() -> employeeRepo.findByEmail(email))
-                .orElseThrow(() -> new ResourceNotFoundException("Employee not found with email: " + email));
-    }
-
-    @Override
     public Employee create(Employee employee) {
         if (employeeRepo.existsByEmail(employee.getEmail())) {
-            throw new EmailAlreadyExistsException("Email exists: " + employee.getEmail());
+            throw new EmailAlreadyExistsException("Employee email already exists: " + employee.getEmail());
         }
+
         User associatedUser = userRepo.findByEmailIgnoreCase(employee.getEmail())
-                .orElseThrow(() -> new ResourceNotFoundException("No user found with email: " + employee.getEmail()));
+                .orElseThrow(() -> new ResourceNotFoundException("No system user found with email: " + employee.getEmail()));
 
         if (employeeRepo.findByUser_UserId(associatedUser.getUserId()).isPresent()) {
-            throw new RuntimeException("This user is already registered as an employee.");
+            throw new RuntimeException("This user account is already linked to another employee.");
         }
 
         employee.setUser(associatedUser);
         validateAndAttachForeignKeys(employee);
 
-        // Capture bank list and detach to save Employee first
-        List<BankAccount> incomingBankAccounts = employee.getBankAccount();
-        employee.setBankAccount(null);
+        List<BankAccount> incomingBankAccounts = employee.getBankAccounts();
+        employee.setBankAccounts(null);
 
         Employee savedEmployee = employeeRepo.save(employee);
 
-        // Fixed Logic: Explicitly map fields to avoid "no default value" errors
         if (incomingBankAccounts != null && !incomingBankAccounts.isEmpty()) {
             BankAccount bankDetails = incomingBankAccounts.get(0);
-
             if (bankDetails.getBank() != null && bankDetails.getAccountNumber() != null) {
-                Bank bank = bankRepo.findById(bankDetails.getBank().getBankId())
-                        .orElseThrow(() -> new ResourceNotFoundException("Bank not found"));
-
-                BankAccount newAcc = new BankAccount();
-                newAcc.setEmployee(savedEmployee);
-                newAcc.setBank(bank);
-                newAcc.setAccountNumber(bankDetails.getAccountNumber());
-                newAcc.setAccountType(bankDetails.getAccountType());
-                newAcc.setCurrency(bankDetails.getCurrency());
-                newAcc.setIsPrimary(true);
-
-                bankAccountRepo.save(newAcc);
-                savedEmployee.setBankAccount(Collections.singletonList(newAcc));
+                mapAndSaveBankAccount(savedEmployee, bankDetails, true);
             }
         }
 
@@ -123,19 +114,19 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     @Override
     public Employee update(Integer id, Employee employee) {
-        Employee existing = employeeRepo.findById(id).orElseThrow(() -> new ResourceNotFoundException("Employee not found"));
+        Employee existing = employeeRepo.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Employee not found with ID: " + id));
 
         if (employee.getEmail() != null && !employee.getEmail().equalsIgnoreCase(existing.getEmail())) {
             if (employeeRepo.existsByEmail(employee.getEmail())) throw new EmailAlreadyExistsException("Email exists");
             User newUser = userRepo.findByEmailIgnoreCase(employee.getEmail())
-                    .orElseThrow(() -> new ResourceNotFoundException("No User found"));
+                    .orElseThrow(() -> new ResourceNotFoundException("No User found for the new email"));
             existing.setUser(newUser);
             existing.setEmail(employee.getEmail());
         }
 
         validateAndAttachForeignKeys(employee);
 
-        // Update basic fields
         existing.setFirstName(employee.getFirstName());
         existing.setLastName(employee.getLastName());
         existing.setContact(employee.getContact());
@@ -152,51 +143,51 @@ public class EmployeeServiceImpl implements EmployeeService {
 
         if (existing.getUser() != null) existing.getUser().setEmail(existing.getEmail());
 
-        // Fixed Logic: Update existing primary account or create a new one properly mapped
-        if (employee.getBankAccount() != null && !employee.getBankAccount().isEmpty()) {
-            BankAccount incomingBa = employee.getBankAccount().get(0);
-
-            BankAccount existingBa = bankAccountRepo.findByEmployeeEmpId(id).stream()
-                    .filter(BankAccount::getIsPrimary)
-                    .findFirst()
-                    .orElse(new BankAccount());
-
-            if (incomingBa.getBank() != null && incomingBa.getAccountNumber() != null) {
-                Bank bank = bankRepo.findById(incomingBa.getBank().getBankId())
-                        .orElseThrow(() -> new ResourceNotFoundException("Bank not found"));
-
-                existingBa.setEmployee(existing);
-                existingBa.setBank(bank);
-                existingBa.setAccountNumber(incomingBa.getAccountNumber());
-                existingBa.setAccountType(incomingBa.getAccountType());
-                existingBa.setCurrency(incomingBa.getCurrency());
-                existingBa.setIsPrimary(true);
-
-                bankAccountRepo.save(existingBa);
-            }
+        if (employee.getBankAccounts() != null && !employee.getBankAccounts().isEmpty()) {
+            mapAndSaveBankAccount(existing, employee.getBankAccounts().get(0), true);
         }
 
         return employeeRepo.save(existing);
     }
 
+    private void mapAndSaveBankAccount(Employee employee, BankAccount details, boolean isPrimary) {
+        Bank bank = bankRepo.findById(details.getBank().getBankId())
+                .orElseThrow(() -> new ResourceNotFoundException("Bank not found"));
+
+        BankAccount account = bankAccountRepo.findByEmployeeEmpId(employee.getEmpId()).stream()
+                .filter(BankAccount::getIsPrimary)
+                .findFirst()
+                .orElse(new BankAccount());
+
+        account.setEmployee(employee);
+        account.setBank(bank);
+        account.setAccountNumber(details.getAccountNumber());
+        account.setAccountType(details.getAccountType());
+        account.setCurrency(details.getCurrency());
+        account.setIsPrimary(isPrimary);
+
+        bankAccountRepo.save(account);
+    }
+
     private void validateAndAttachForeignKeys(Employee employee) {
         if (employee.getDepartment() == null || employee.getDepartment().getDeptId() == null)
-            throw new IllegalArgumentException("Department ID required");
+            throw new IllegalArgumentException("Department ID is mandatory");
         if (employee.getPosition() == null || employee.getPosition().getDesignationId() == null)
-            throw new IllegalArgumentException("Designation ID required");
+            throw new IllegalArgumentException("Designation ID is mandatory");
 
         Department dept = departmentRepo.findById(employee.getDepartment().getDeptId())
-                .orElseThrow(() -> new ResourceNotFoundException("Dept not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Department not found"));
         Designation desig = designationRepo.findById(employee.getPosition().getDesignationId())
-                .orElseThrow(() -> new ResourceNotFoundException("Desig not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Designation not found"));
 
         employee.setDepartment(dept);
         employee.setPosition(desig);
     }
 
     @Override public void delete(Integer id) { employeeRepo.deleteById(id); }
-    @Override public Employee getById(Integer id) { return employeeRepo.findById(id).orElseThrow(() -> new ResourceNotFoundException("Not found")); }
+    @Override public Employee getById(Integer id) { return employeeRepo.findById(id).orElseThrow(() -> new ResourceNotFoundException("Employee not found")); }
     @Override public List<Employee> getAll() { return employeeRepo.findAll(); }
+    @Override public Employee getByEmail(String email) { return employeeRepo.findByUser_Email(email).or(() -> employeeRepo.findByEmail(email)).orElseThrow(() -> new ResourceNotFoundException("Email not found")); }
 
     @Override
     public Map<Integer, Long> getActiveEmployeeStats() {

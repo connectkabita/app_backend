@@ -22,28 +22,36 @@ public class User {
     @Column(name = "user_id")
     private Integer userId;
 
-    @Column(name = "username",nullable = false, unique = true)
+    @Column(name = "username", nullable = false, unique = true, length = 50)
     private String username;
 
-    // FIX: Change @JsonIgnore to this so the backend can "read" the password from the JSON request
     @Column(name = "password", nullable = false)
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false, unique = true, length = 100)
     private String email;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "role_id", nullable = false)
-    @JsonIgnoreProperties("users")
+    @JsonIgnoreProperties("users") // Prevents Role -> Users -> Role loop
     private Role role;
 
-    private String status;
+    @Builder.Default
+    @Column(length = 20)
+    private String status = "ACTIVE";
 
-    // Mapping preserved to prevent 500 error
-    @OneToOne(mappedBy = "user")
-    @JsonIgnore
-    private Employee employee; // Fixed double semicolon
+    @Builder.Default
+    @Column(nullable = false)
+    private boolean enabled = true;
+
+    /**
+     * Link to the Employee record.
+     * mappedBy refers to the "user" field in the Employee class.
+     */
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnoreProperties("user") // Prevents User -> Employee -> User loop
+    private Employee employee;
 
     @Column(name = "reset_token")
     @JsonIgnore
@@ -52,11 +60,20 @@ public class User {
     @Column(name = "token_expiry")
     @JsonIgnore
     private LocalDateTime tokenExpiry;
-    @Column(name = "created_at")
+
+    @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
     @PrePersist
-    public void onCreate() {
+    protected void onCreate() {
         this.createdAt = LocalDateTime.now();
+        if (this.status == null) {
+            this.status = "ACTIVE";
+        }
+    }
+
+    // Helper method to ensure Spring Security always sees the boolean status correctly
+    public boolean isEnabled() {
+        return this.enabled;
     }
 }

@@ -1,18 +1,25 @@
 package np.edu.nast.payroll.Payroll.controller;
 
+import lombok.extern.slf4j.Slf4j;
+import np.edu.nast.payroll.Payroll.dto.auth.PayrollDashboardDTO;
 import np.edu.nast.payroll.Payroll.entity.Payroll;
+import np.edu.nast.payroll.Payroll.entity.User;
+import np.edu.nast.payroll.Payroll.repository.UserRepository;
 import np.edu.nast.payroll.Payroll.service.PayrollService;
 import np.edu.nast.payroll.Payroll.service.EmailService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/payrolls")
-@CrossOrigin(origins = "http://localhost:5173")
 public class PayrollController {
 
     @Autowired
@@ -21,76 +28,122 @@ public class PayrollController {
     @Autowired
     private EmailService emailService;
 
+    @Autowired
+    private UserRepository userRepository;
+
+    /**
+     * ANDROID APP ENDPOINT: Fetches payroll data for the Salary Fragment.
+     * Updated to allow any authenticated employee (USER, EMPLOYEE, or ADMIN)
+     * to view their own salary history on the mobile device.
+     */
+    @GetMapping("/command-center")
+    @PreAuthorize("hasAnyAuthority('ROLE_USER', 'ROLE_ADMIN', 'ROLE_EMPLOYEE')")
+    public ResponseEntity<?> getPayrollCommandCenter(
+            @RequestParam(name = "month") int month,
+            @RequestParam(name = "year") int year) {
+        try {
+            // Get the username from the JWT context set by JwtFilter
+            String username = SecurityContextHolder.getContext().getAuthentication().getName();
+            log.info("Mobile request: Fetching payroll for user [{}] for period {}-{}", username, month, year);
+
+            User user = userRepository.findByUsername(username)
+                    .orElseThrow(() -> new RuntimeException("User not found: " + username));
+
+            // Ensure the user actually has an associated employee profile in the DB
+            if (user.getEmployee() == null) {
+                log.warn("Access Warning: User [{}] exists but has no linked Employee record.", username);
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(Map.of("message", "Account is not linked to an active Employee profile"));
+            }
+
+            Integer empId = user.getEmployee().getEmpId();
+            Payroll record = payrollService.getPayrollByEmployeeAndMonth(empId, month, year);
+
+            // Wrap in a list as expected by the Android Adapter to prevent null-pointer crashes
+            return ResponseEntity.ok(Map.of("employeeRows", record != null ? List.of(record) : List.of()));
+
+        } catch (Exception e) {
+            log.error("Internal Error in command-center for user: ", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Server Error: " + e.getMessage()));
+        }
+    }
+
+    // --- ADMINISTRATIVE ENDPOINTS ---
+
     @GetMapping
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     public List<Payroll> getAll() {
         return payrollService.getAllPayrolls();
     }
 
-    /**
-     * STEP 1: PREVIEW
-     * Calculates payroll based on inputs, but DOES NOT save to database.
-     * Updated with robust error handling to catch "Employee Not Found" errors.
-     */
-    @PostMapping("/preview")
-    public ResponseEntity<?> preview(@RequestBody Map<String, Object> payload) {
+    @GetMapping("/batch-calculate")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    public ResponseEntity<?> getBatchCalculation(
+            @RequestParam(name = "month") String month,
+            @RequestParam(name = "year") int year) {
         try {
-            // Debug log: Check IntelliJ console to see exactly what React sent
-            System.out.println("Payroll Preview Request Received: " + payload);
-
-            Payroll previewData = payrollService.calculatePreview(payload);
-            return ResponseEntity.ok(previewData);
-        } catch (RuntimeException e) {
-            // This catches the "Employee not found ID: 1" and sends it to the UI
-            System.err.println("Preview Error: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("message", e.getMessage()));
+            List<PayrollDashboardDTO> batchData = payrollService.getBatchCalculation(month, year);
+            return ResponseEntity.ok(batchData != null ? batchData : List.of());
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("message", "An unexpected error occurred."));
+                    .body(Map.of("message", e.getMessage()));
         }
     }
 
-    /**
-     * STEP 2: PROCESS / FINALIZE
-     * Performs the actual transaction and saves to the database.
-     */
+    @PostMapping("/preview")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    public ResponseEntity<?> preview(@RequestBody Map<String, Object> payload) {
+        try {
+            Payroll previewData = payrollService.calculatePreview(payload);
+            return ResponseEntity.ok(previewData);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
     @PostMapping("/process")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     public ResponseEntity<?> process(@RequestBody Map<String, Object> payload) {
         try {
             Payroll processedPayroll = payrollService.processPayroll(payload);
             return ResponseEntity.ok(processedPayroll);
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("message", e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         }
     }
 
     @GetMapping("/employee/{empId}/history")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     public ResponseEntity<List<Payroll>> getEmployeeHistory(@PathVariable Integer empId) {
-        List<Payroll> history = payrollService.getPayrollByEmployeeId(empId);
-        return ResponseEntity.ok(history);
+        return ResponseEntity.ok(payrollService.getPayrollByEmployeeId(empId));
+    }
+
+    @PostMapping("/{id}/finalize")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    public ResponseEntity<?> finalizePayroll(@PathVariable Integer id, @RequestBody Map<String, String> payload) {
+        try {
+            String transactionRef = payload.getOrDefault("transactionRef", "N/A");
+            payrollService.finalizePayroll(id, transactionRef);
+            return ResponseEntity.ok(Map.of("message", "Payroll finalized."));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("message", e.getMessage()));
+        }
     }
 
     @PutMapping("/{id}/status")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     public ResponseEntity<Payroll> updateStatus(@PathVariable Integer id, @RequestBody Map<String, String> statusUpdate) {
-        String newStatus = statusUpdate.get("status");
-        Payroll updatedPayroll = payrollService.updateStatus(id, newStatus);
-        return ResponseEntity.ok(updatedPayroll);
-    }
-
-    @PutMapping("/{id}/void")
-    public ResponseEntity<Payroll> voidPayroll(@PathVariable Integer id) {
-        Payroll voided = payrollService.voidPayroll(id);
-        return ResponseEntity.ok(voided);
+        return ResponseEntity.ok(payrollService.updateStatus(id, statusUpdate.get("status")));
     }
 
     @PostMapping("/{id}/send-email")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     public ResponseEntity<?> sendEmail(@PathVariable Integer id) {
         try {
             Payroll payroll = payrollService.getPayrollById(id);
-            // Pass "Manual" as transaction ID for UI-triggered emails
             emailService.generateAndSendPayslip(payroll, "MANUAL_DISBURSEMENT");
-            return ResponseEntity.ok().body(Map.of("message", "Payslip PDF email sent successfully!"));
+            return ResponseEntity.ok().body(Map.of("message", "Email sent!"));
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
         }

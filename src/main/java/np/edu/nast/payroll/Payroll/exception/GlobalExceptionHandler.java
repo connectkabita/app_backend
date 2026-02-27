@@ -1,91 +1,80 @@
 package np.edu.nast.payroll.Payroll.exception;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.util.HashMap;
 import java.util.Map;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    /* ==========================================
-       AUTH FAILURE (Bad Credentials, Locked, etc)
-       ========================================== */
+    /**
+     * AUTH FAILURE: Capture 401 Unauthorized errors (Bad Credentials, etc.)
+     */
     @ExceptionHandler(AuthenticationException.class)
-    public ResponseEntity<Map<String, String>> handleAuthenticationException(
-            AuthenticationException ex) {
-
-        Map<String, String> response = new HashMap<>();
-        // This will capture "Bad credentials" or custom messages from AuthServiceImpl
-        response.put("message", ex.getMessage());
-
+    public ResponseEntity<Map<String, String>> handleAuthenticationException(AuthenticationException ex) {
+        log.warn("Authentication failure: {}", ex.getMessage());
         return ResponseEntity
-                .status(HttpStatus.UNAUTHORIZED) // 401 Unauthorized
-                .body(response);
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("message", ex.getMessage()));
     }
 
-    /* ============================
-       EMAIL ALREADY EXISTS
-       ============================ */
+    /**
+     * ACCESS DENIED: Capture 403 Forbidden errors (Wrong Role/Permissions)
+     */
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<Map<String, String>> handleAccessDeniedException(AccessDeniedException ex) {
+        log.warn("Access denied: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(Map.of("message", "You do not have permission to access this resource"));
+    }
+
+    /**
+     * CONFLICT: Email/User already exists
+     */
     @ExceptionHandler(EmailAlreadyExistsException.class)
-    public ResponseEntity<Map<String, String>> handleEmailAlreadyExists(
-            EmailAlreadyExistsException ex) {
-
-        Map<String, String> response = new HashMap<>();
-        response.put("message", ex.getMessage());
-
+    public ResponseEntity<Map<String, String>> handleEmailAlreadyExists(EmailAlreadyExistsException ex) {
         return ResponseEntity
-                .status(HttpStatus.CONFLICT) // 409
-                .body(response);
+                .status(HttpStatus.CONFLICT)
+                .body(Map.of("message", ex.getMessage()));
     }
 
-    /* ============================
-       ILLEGAL ARGUMENT / VALIDATION
-       ============================ */
+    /**
+     * BAD REQUEST: Validation or Illegal Arguments
+     */
     @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<Map<String, String>> handleIllegalArgument(
-            IllegalArgumentException ex) {
-
-        Map<String, String> response = new HashMap<>();
-        response.put("message", ex.getMessage());
-
+    public ResponseEntity<Map<String, String>> handleIllegalArgument(IllegalArgumentException ex) {
         return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST) // 400
-                .body(response);
+                .status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("message", ex.getMessage()));
     }
 
-    /* ============================
-       GENERIC RUNTIME ERRORS
-       ============================ */
+    /**
+     * GENERIC RUNTIME ERRORS: Captures logical errors
+     */
     @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<Map<String, String>> handleRuntimeException(
-            RuntimeException ex) {
-
-        Map<String, String> response = new HashMap<>();
-        response.put("message", ex.getMessage());
-
-        // For login "User not found" it usually flows here if not caught by AuthException
+    public ResponseEntity<Map<String, String>> handleRuntimeException(RuntimeException ex) {
+        log.error("Runtime exception occurred: ", ex);
         return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST) // Changed to 400 for general logic errors
-                .body(response);
+                .status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("message", ex.getMessage()));
     }
 
-    /* ============================
-       FALLBACK (UNEXPECTED ERRORS)
-       ============================ */
+    /**
+     * FALLBACK: Unexpected system errors
+     */
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, String>> handleGeneralException(
-            Exception ex) {
-
-        Map<String, String> response = new HashMap<>();
-        response.put("message", "Internal server error: " + ex.getMessage());
-
+    public ResponseEntity<Map<String, String>> handleGeneralException(Exception ex) {
+        log.error("Unexpected error: ", ex);
         return ResponseEntity
-                .status(HttpStatus.INTERNAL_SERVER_ERROR) // 500
-                .body(response);
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("message", "An internal server error occurred. Please try again later."));
     }
 }

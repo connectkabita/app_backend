@@ -12,39 +12,46 @@ import java.util.Optional;
 @Repository
 public interface PayrollRepository extends JpaRepository<Payroll, Integer> {
 
-    // Matches the naming convention: Entity 'employee' -> Field 'empId'
+    @Query("SELECT p FROM Payroll p WHERE YEAR(p.payPeriodStart) = :year AND MONTH(p.payPeriodStart) = :month")
+    List<Payroll> findByMonthAndYear(@Param("month") int month, @Param("year") int year);
+
     List<Payroll> findByEmployeeEmpId(Integer empId);
 
-    @Query("SELECT COALESCE(SUM(p.netSalary), 0) FROM Payroll p WHERE YEAR(p.payDate) = :year AND p.status != 'VOIDED'")
+    @Query("SELECT COALESCE(SUM(p.netSalary), 0) FROM Payroll p WHERE YEAR(p.payPeriodStart) = :year AND p.status != 'VOIDED'")
     double yearlyPayroll(@Param("year") int year);
 
-    @Query("SELECT COALESCE(SUM(p.totalDeductions), 0) FROM Payroll p WHERE YEAR(p.payDate) = :year AND p.status != 'VOIDED'")
+    @Query("SELECT COALESCE(SUM(p.totalDeductions), 0) FROM Payroll p WHERE YEAR(p.payPeriodStart) = :year AND p.status != 'VOIDED'")
     double yearlyDeductions(@Param("year") int year);
 
-    @Query("SELECT COALESCE(SUM(p.totalAllowances), 0) FROM Payroll p WHERE YEAR(p.payDate) = :year AND p.status != 'VOIDED'")
+    @Query("SELECT COALESCE(SUM(p.totalAllowances), 0) FROM Payroll p WHERE YEAR(p.payPeriodStart) = :year AND p.status != 'VOIDED'")
     double yearlyAllowances(@Param("year") int year);
+
+    /**
+     * UPDATED FOR TOTAL GROSS:
+     * We added SUM(p.grossSalary) to the selection.
+     * This allows the Controller to populate the Gross Pay card with live DB values.
+     */
+    @Query("""
+        SELECT d.deptName, SUM(p.netSalary), SUM(p.totalTax), SUM(p.grossSalary)
+        FROM Payroll p
+        JOIN p.employee e
+        JOIN e.department d
+        WHERE p.monthlyInfo.monthlyInfoId = :monthlyInfoId
+        GROUP BY d.deptId, d.deptName
+    """)
+    List<Object[]> getDepartmentalTotals(@Param("monthlyInfoId") Integer monthlyInfoId);
 
     @Query("""
         SELECT new np.edu.nast.payroll.Payroll.reportdto.MonthlyPayrollDTO(
-            FUNCTION('MONTHNAME', p.payDate), SUM(p.netSalary)
+            FUNCTION('MONTHNAME', p.payPeriodStart), SUM(p.netSalary)
         )
         FROM Payroll p
-        WHERE FUNCTION('YEAR', p.payDate) = :year AND p.status != 'VOIDED'
-        GROUP BY FUNCTION('MONTH', p.payDate), FUNCTION('MONTHNAME', p.payDate)
-        ORDER BY FUNCTION('MONTH', p.payDate)
+        WHERE FUNCTION('YEAR', p.payPeriodStart) = :year AND p.status != 'VOIDED'
+        GROUP BY FUNCTION('MONTH', p.payPeriodStart), FUNCTION('MONTHNAME', p.payPeriodStart)
+        ORDER BY FUNCTION('MONTH', p.payPeriodStart)
     """)
     List<MonthlyPayrollDTO> monthlyPayroll(@Param("year") int year);
 
-    @Query("SELECT p FROM Payroll p WHERE p.employee.empId = :empId AND YEAR(p.payDate) = :year AND MONTH(p.payDate) = :month")
+    @Query("SELECT p FROM Payroll p WHERE p.employee.empId = :empId AND YEAR(p.payPeriodStart) = :year AND MONTH(p.payPeriodStart) = :month")
     Optional<Payroll> findByEmployeeEmpIdAndMonth(@Param("empId") Integer empId, @Param("year") int year, @Param("month") int month);
-
-    @Query("SELECT p FROM Payroll p WHERE p.employee.empId = :empId " +
-            "AND p.payPeriodStart = :startDate AND p.payPeriodEnd = :endDate " +
-            "AND p.status != 'VOIDED'")
-    Optional<Payroll> findByEmployeeAndPeriod(
-            @Param("empId") Integer empId,
-            @Param("startDate") java.time.LocalDate startDate,
-            @Param("endDate") java.time.LocalDate endDate
-    );
-
 }

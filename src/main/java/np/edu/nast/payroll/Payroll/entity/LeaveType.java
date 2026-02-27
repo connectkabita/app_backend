@@ -7,19 +7,26 @@ import lombok.*;
 @Table(name = "leave_type")
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class LeaveType {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(nullable = false)
+    @Column(name = "leave_type_id")
     private Integer leaveTypeId;
-    @Column(nullable = false)
+
+    @Column(name = "type_name", nullable = false, unique = true)
     private String typeName;
-    @Column(nullable = false)
+
+    @Column(name = "default_days_per_year", nullable = false)
     private Integer defaultDaysPerYear;
+
     @Column(nullable = false)
     private Boolean paid;
 
-    // FIX: Added the return statement for the manually defined isPaid() method.
+    /**
+     * Explicit helper for Boolean logic.
+     * Useful for checking "if (leaveType.isPaid()) { ... }" in Payroll calculations.
+     */
     public Boolean isPaid() {
-        return this.paid;
+        return this.paid != null && this.paid;
     }
 }

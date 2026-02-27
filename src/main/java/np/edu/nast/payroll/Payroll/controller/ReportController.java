@@ -10,7 +10,7 @@ import np.edu.nast.payroll.Payroll.repository.LeaveBalanceRepository;
 import np.edu.nast.payroll.Payroll.repository.PayrollRepository;
 import np.edu.nast.payroll.Payroll.service.ReportService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -18,14 +18,18 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/reports")
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = "*") // Expanded for both Web and Android Emulator
 @RequiredArgsConstructor
 public class ReportController {
 
-    @Autowired
-    private ReportService reportService;
+    private final ReportService reportService;
+    private final PayrollRepository payrollRepo;
+    private final EmployeeRepository employeeRepo;
+    private final LeaveBalanceRepository leaveBalanceRepo;
+    private final AttendanceRepository attendanceRepo;
 
     @GetMapping("/history")
     public List<Report> getHistory() {
@@ -49,32 +53,34 @@ public class ReportController {
                 .body(data);
     }
 
-    //reports charts
-    private final PayrollRepository payrollRepo;
-    private final EmployeeRepository employeeRepo;
-    private final LeaveBalanceRepository leaveBalanceRepo;
-    private final AttendanceRepository attendanceRepo;
-
-    // 1️⃣ Summary cards
+    /**
+     * 1️⃣ Summary cards
+     * FIX: Changed 0 to 0.0 to match the double parameter in LeaveBalanceRepository
+     */
     @GetMapping("/analytics/summary")
     public PayrollSummaryDTO summary(@RequestParam int year) {
+        log.info("Fetching payroll analytics summary for year: {}", year);
 
         return new PayrollSummaryDTO(
                 employeeRepo.count(),
                 payrollRepo.yearlyPayroll(year),
                 payrollRepo.yearlyDeductions(year),
                 payrollRepo.yearlyAllowances(year),
-                leaveBalanceRepo.countByCurrentBalanceDaysGreaterThan(0)
+                leaveBalanceRepo.countByCurrentBalanceDaysGreaterThan(0.0)
         );
-
     }
 
-    // 2️⃣ Monthly payroll chart
+    /**
+     * 2️⃣ Monthly payroll chart
+     */
     @GetMapping("/analytics/monthly-payroll")
     public List<MonthlyPayrollDTO> monthlyPayroll(@RequestParam int year) {
         return payrollRepo.monthlyPayroll(year);
     }
 
+    /**
+     * 3️⃣ Attendance Summary
+     */
     @GetMapping("/attendance/summary")
     public AttendanceSummaryDTO attendance(
             @RequestParam int year,
@@ -84,7 +90,7 @@ public class ReportController {
 
         long present = 0, absent = 0, leave = 0;
 
-        if (!result.isEmpty()) {
+        if (result != null && !result.isEmpty()) {
             Object[] r = result.get(0);
 
             if (r.length > 0 && r[0] != null) present = ((Number) r[0]).longValue();
@@ -95,5 +101,3 @@ public class ReportController {
         return new AttendanceSummaryDTO(present, absent, leave);
     }
 }
-
-

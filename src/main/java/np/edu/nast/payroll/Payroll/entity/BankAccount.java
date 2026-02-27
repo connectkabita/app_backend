@@ -18,13 +18,11 @@ public class BankAccount {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer accountId;
 
-    // Employee must exist before bank account creation
     @ManyToOne(optional = false)
     @JoinColumn(name = "emp_id", nullable = false)
     @JsonIgnore
     private Employee employee;
 
-    // Bank must exist before bank account creation
     @ManyToOne(optional = false)
     @JoinColumn(name = "bank_id", nullable = false)
     private Bank bank;
@@ -33,9 +31,10 @@ public class BankAccount {
     private String accountNumber;
 
     @Column(nullable = false)
-    private String accountType; // Savings / Current / Salary
+    private String accountType;
 
-    @Column(nullable = false)
+    // Changed name to avoid SQL reserved word "PRIMARY"
+    @Column(name = "is_primary", nullable = false)
     private Boolean isPrimary;
 
     @Column(nullable = false)
@@ -44,9 +43,11 @@ public class BankAccount {
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
-    // Automatically set createdAt before insert
     @PrePersist
     public void prePersist() {
         this.createdAt = LocalDateTime.now();
+        if (this.isPrimary == null) {
+            this.isPrimary = false;
+        }
     }
 }

@@ -16,9 +16,9 @@ public class Department {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(nullable = false)
+    @Column(name = "dept_id", nullable = false) // Explicitly map to dept_id
     private Integer deptId;
 
-    @Column(nullable = false)
+    @Column(name = "dept_name", nullable = false) // Match your SELECT * results
     private String deptName;
 }

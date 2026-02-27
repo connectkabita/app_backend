@@ -1,7 +1,5 @@
 package np.edu.nast.payroll.Payroll.security;
 
-import io.jsonwebtoken.ExpiredJwtException;
-import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -9,6 +7,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
@@ -16,10 +15,12 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
 
-@Slf4j
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class JwtFilter extends OncePerRequestFilter {
 
     private final JwtUtils jwtUtils;
@@ -31,49 +32,58 @@ public class JwtFilter extends OncePerRequestFilter {
 
         final String authHeader = request.getHeader("Authorization");
 
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            filterChain.doFilter(request, response);
-            return;
-        }
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            final String token = authHeader.substring(7);
 
-        final String token = authHeader.substring(7).trim();
-
-        // Check for common malformed token strings from frontend
-        if (token.isEmpty() || "null".equalsIgnoreCase(token) || "undefined".equalsIgnoreCase(token)) {
-            log.warn("Malformed token received: {}", token);
-            filterChain.doFilter(request, response);
-            return;
-        }
-
-        try {
-            String username = jwtUtils.getUsernameFromToken(token);
-
-            if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-
-                if (jwtUtils.validateToken(token)) {
-                    UsernamePasswordAuthenticationToken authentication =
-                            new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-
-                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    SecurityContextHolder.getContext().setAuthentication(authentication);
-                    log.info("Authenticated user: {}", username);
+            try {
+                // Defensive check for common mobile client issues
+                if (token.isEmpty() || "null".equalsIgnoreCase(token)) {
+                    filterChain.doFilter(request, response);
+                    return;
                 }
+
+                String username = jwtUtils.getUsernameFromToken(token);
+
+                if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                    if (jwtUtils.validateToken(token)) {
+                        // Load core user details (password/enabled status) from DB
+                        UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+
+                        // 1. Extract role directly from the JWT (e.g., "ROLE_ADMIN")
+                        String rawRole = jwtUtils.extractRole(token);
+
+                        if (rawRole != null) {
+                            // 2. Normalize to strict ROLE_ format
+                            String processedRole = rawRole.trim().toUpperCase();
+                            if (!processedRole.startsWith("ROLE_")) {
+                                processedRole = "ROLE_" + processedRole;
+                            }
+
+                            // 3. Create authority specifically from the token's claim
+                            // This prevents a 403 if the DB role name differs slightly from the JWT role claim
+                            SimpleGrantedAuthority authority = new SimpleGrantedAuthority(processedRole);
+                            List<SimpleGrantedAuthority> authorities = Collections.singletonList(authority);
+
+                            log.info("JWT Authentication Success: User [{}] authenticated with Authority [{}]", username, processedRole);
+
+                            UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                                    userDetails,
+                                    null,
+                                    userDetails.getAuthorities()// Use authorities derived from JWT
+                            );
+
+                            authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                            SecurityContextHolder.getContext().setAuthentication(authToken);
+                        } else {
+                            log.warn("Access Denied: Token validated but no 'role' claim found for user [{}]", username);
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                log.error("JWT Filter validation failed: {}", e.getMessage());
             }
-            filterChain.doFilter(request, response);
-
-        } catch (ExpiredJwtException ex) {
-            sendUnauthorized(response, "TOKEN_EXPIRED", "Session expired. Please login again.");
-        } catch (Exception ex) {
-            log.error("JWT Authentication failed: {}", ex.getMessage());
-            sendUnauthorized(response, "AUTH_ERROR", "Authentication failed.");
         }
-    }
 
-    private void sendUnauthorized(HttpServletResponse response, String error, String message) throws IOException {
-        SecurityContextHolder.clearContext();
-        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-        response.setContentType("application/json");
-        response.getWriter().write(String.format("{\"error\": \"%s\", \"message\": \"%s\"}", error, message));
+        filterChain.doFilter(request, response);
     }
 }

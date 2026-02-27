@@ -1,10 +1,13 @@
 package np.edu.nast.payroll.Payroll.service.impl;
 
+import lombok.RequiredArgsConstructor;
 import np.edu.nast.payroll.Payroll.entity.Attendance;
 import np.edu.nast.payroll.Payroll.entity.Employee;
+import np.edu.nast.payroll.Payroll.entity.EmployeeLeave;
 import np.edu.nast.payroll.Payroll.exception.ResourceNotFoundException;
 import np.edu.nast.payroll.Payroll.repository.AttendanceRepository;
 import np.edu.nast.payroll.Payroll.repository.EmployeeRepository;
+import np.edu.nast.payroll.Payroll.repository.EmployeeLeaveRepository;
 import np.edu.nast.payroll.Payroll.service.AttendanceService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,25 +15,21 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class AttendanceServiceImpl implements AttendanceService {
 
     private final AttendanceRepository attendanceRepository;
     private final EmployeeRepository employeeRepository;
-
-    public AttendanceServiceImpl(AttendanceRepository attendanceRepository, EmployeeRepository employeeRepository) {
-        this.attendanceRepository = attendanceRepository;
-        this.employeeRepository = employeeRepository;
-    }
+    private final EmployeeLeaveRepository employeeLeaveRepository;
 
     @Override
     @Transactional
     public Attendance createAttendance(Attendance attendance) {
-        // PREVIOUS LOGIC: Check if employee object or ID is null BEFORE calling repository
         if (attendance.getEmployee() == null || attendance.getEmployee().getEmpId() == null) {
             throw new IllegalArgumentException("Employee identity is missing. Please re-login.");
         }
@@ -39,7 +38,6 @@ public class AttendanceServiceImpl implements AttendanceService {
         Employee employee = employeeRepository.findById(empId)
                 .orElseThrow(() -> new ResourceNotFoundException("Employee record not found for ID: " + empId));
 
-        // PREVIOUS LOGIC: 10-HOUR RULE
         Optional<Attendance> lastRecord = attendanceRepository.findTopByEmployee_EmpIdOrderByAttendanceIdDesc(empId);
         if (lastRecord.isPresent()) {
             LocalDateTime lastCheckIn = lastRecord.get().getCheckInTime();
@@ -49,7 +47,6 @@ public class AttendanceServiceImpl implements AttendanceService {
             }
         }
 
-        // PREVIOUS LOGIC: SET SERVER TIME (Ignores incorrect frontend time)
         attendance.setEmployee(employee);
         attendance.setCheckInTime(LocalDateTime.now());
         attendance.setAttendanceDate(LocalDate.now());
@@ -64,35 +61,69 @@ public class AttendanceServiceImpl implements AttendanceService {
         Attendance existing = attendanceRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Attendance record " + id + " not found"));
 
-        // PREVIOUS LOGIC: If this is a checkout, use server time
         if (updated.getCheckOutTime() != null || "Checked Out".equals(updated.getStatus())) {
             existing.setCheckOutTime(LocalDateTime.now());
-            existing.setStatus("COMPLETED"); // Ensures status updates from PRESENT to COMPLETED
+            existing.setStatus("COMPLETED");
         }
 
         return attendanceRepository.save(existing);
     }
 
     @Override
-    @Transactional // Added Transactional here because it performs database updates
+    @Transactional
     public List<Attendance> getAttendanceByEmployee(Integer empId) {
-        // PREVIOUS LOGIC: Return empty list if empId is null
         if (empId == null) return List.of();
-
         List<Attendance> records = attendanceRepository.findByEmployee_EmpId(empId);
 
-        // PREVIOUS LOGIC: 8-HOUR AUTO-CHECKOUT (Applied when fetching history)
-        return records.stream().map(record -> {
-            if (record.getCheckOutTime() == null) {
-                long hoursActive = Duration.between(record.getCheckInTime(), LocalDateTime.now()).toHours();
-                if (hoursActive >= 8) {
-                    record.setCheckOutTime(record.getCheckInTime().plusHours(8));
-                    record.setStatus("AUTO-CHECKOUT"); // New: Mark as auto-checked out for clarity
-                    attendanceRepository.save(record);
-                }
-            }
-            return record;
-        }).collect(Collectors.toList());
+        return records.stream()
+                .sorted((a, b) -> b.getAttendanceDate().compareTo(a.getAttendanceDate()))
+                .map(record -> {
+                    if (record.getCheckOutTime() == null) {
+                        long hoursActive = Duration.between(record.getCheckInTime(), LocalDateTime.now()).toHours();
+                        if (hoursActive >= 8) {
+                            record.setCheckOutTime(record.getCheckInTime().plusHours(8));
+                            record.setStatus("AUTO-CHECKOUT");
+                            attendanceRepository.save(record);
+                        }
+                    }
+                    return record;
+                }).collect(Collectors.toList());
+    }
+
+    @Override
+    public Map<String, Object> getMonthlyStats(Integer empId, int year, int month) {
+        LocalDate startOfMonth = LocalDate.of(year, month, 1);
+        LocalDate endOfMonth = startOfMonth.withDayOfMonth(startOfMonth.lengthOfMonth());
+
+        // 1. Count Presence
+        long present = attendanceRepository.countByEmployee_EmpIdAndStatusAndAttendanceDateBetween(empId, "PRESENT", startOfMonth, endOfMonth)
+                + attendanceRepository.countByEmployee_EmpIdAndStatusAndAttendanceDateBetween(empId, "COMPLETED", startOfMonth, endOfMonth)
+                + attendanceRepository.countByEmployee_EmpIdAndStatusAndAttendanceDateBetween(empId, "AUTO-CHECKOUT", startOfMonth, endOfMonth);
+
+        // 2. Calculate Approved Leaves
+        List<EmployeeLeave> approvedLeaves = employeeLeaveRepository.findRelevantLeaves(empId, "Approved", startOfMonth, endOfMonth);
+        long totalLeaveDaysInThisMonth = 0;
+        for (EmployeeLeave leave : approvedLeaves) {
+            LocalDate overlapStart = leave.getStartDate().isBefore(startOfMonth) ? startOfMonth : leave.getStartDate();
+            LocalDate overlapEnd = leave.getEndDate().isAfter(endOfMonth) ? endOfMonth : leave.getEndDate();
+            totalLeaveDaysInThisMonth += ChronoUnit.DAYS.between(overlapStart, overlapEnd) + 1;
+        }
+
+        // 3. Calculate Absence logic
+        LocalDate today = LocalDate.now();
+        LocalDate boundaryDate = (today.isBefore(endOfMonth) && today.getYear() == year && today.getMonthValue() == month)
+                ? today : endOfMonth;
+
+        long totalDaysElapsed = ChronoUnit.DAYS.between(startOfMonth, boundaryDate) + 1;
+        long absent = Math.max(0, totalDaysElapsed - present - totalLeaveDaysInThisMonth);
+
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("present", present);
+        stats.put("leaveTaken", totalLeaveDaysInThisMonth);
+        stats.put("absent", absent);
+        stats.put("totalDaysInMonth", startOfMonth.lengthOfMonth());
+
+        return stats;
     }
 
     @Override public void deleteAttendance(Integer id) { attendanceRepository.deleteById(id); }

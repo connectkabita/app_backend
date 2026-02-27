@@ -1,5 +1,8 @@
 package np.edu.nast.payroll.Payroll.entity;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -17,69 +20,67 @@ import java.time.temporal.ChronoUnit;
 public class EmployeeLeave {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(nullable = false)
+    @Column(name = "leave_id")
+    @JsonProperty("leaveId")
     private Integer leaveId;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "emp_id", nullable = false)
+    @JsonIgnoreProperties({"bankAccounts", "user", "payrolls", "department", "designation", "employeeDocuments"})
     private Employee employee;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "leave_type_id", nullable = false)
     private LeaveType leaveType;
 
-    @Column(nullable = false)
+    @Column(name = "start_date", nullable = false)
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate startDate;
 
-    @Column(nullable = false)
+    @Column(name = "end_date", nullable = false)
+    @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate endDate;
 
-    @Column(nullable = false)
+    @Column(name = "total_days", nullable = false)
+    @JsonProperty("totalDays")
     private Integer totalDays;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String reason;
 
-    @Column(nullable = false)
-    private String status; // e.g., "Pending", "Approved", "Rejected"
+    @Column(nullable = false, length = 20)
+    private String status; // "Pending", "Approved", "Rejected"
 
     @CreationTimestamp
-    @Column(nullable = false, updatable = false)
+    @Column(name = "requested_at", nullable = false, updatable = false)
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime requestedAt;
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "approved_by_user_id", nullable = true)
+    @JoinColumn(name = "approved_by_user_id")
+    @JsonIgnoreProperties({"password", "employee", "roles"})
     private User approvedBy;
 
-    @Column(name = "approved_at", nullable = true)
+    @Column(name = "approved_at")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime approvedAt;
-    // ... other imports
-    @Column(name = "rejection_reason", nullable = true)
-    private String rejectionReason; // NEW FIELD for rejection notes
 
-    // --- MERGED CALLBACK METHOD ---
+    @Column(name = "rejection_reason")
+    private String rejectionReason;
+
     @PrePersist
     public void handleBeforeInsert() {
-        LocalDate today = LocalDate.now();
-
         if (this.startDate != null && this.endDate != null) {
-            // 1. Constraint: Start Date cannot be in the past
-            if (this.startDate.isBefore(today)) {
-                throw new IllegalArgumentException("Leave start date cannot be in the past.");
-            }
-
-            // 2. Constraint: Start Date must be before or equal to End Date
             if (this.startDate.isAfter(this.endDate)) {
-                throw new IllegalArgumentException("Start date must be before or equal to the end date.");
+                throw new IllegalArgumentException("Start date cannot be after end date.");
             }
-
-            // 3. Logic: Calculate totalDays
             long days = ChronoUnit.DAYS.between(this.startDate, this.endDate) + 1;
             this.totalDays = (int) days;
+        } else if (this.totalDays == null) {
+            this.totalDays = 0;
         }
 
-        // 4. Default status
-        if (this.status == null || this.status.isEmpty()) {
+        if (this.status == null || this.status.isBlank()) {
             this.status = "Pending";
         }
     }

@@ -10,7 +10,10 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "attendance")
 @Getter
-@Setter @NoArgsConstructor @AllArgsConstructor @Builder
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Attendance {
 
@@ -20,7 +23,11 @@ public class Attendance {
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "emp_id", nullable = false)
-    private Employee employee; // Points to your employee table
+    private Employee employee;
+
+    // Helper field for the Controller/Android app
+    @Transient // This won't be saved in the DB, but allows setEmpId() to work
+    private Integer empId;
 
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime checkInTime;
@@ -28,14 +35,27 @@ public class Attendance {
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime checkOutTime;
 
-    private Double inGpsLat;
-    private Double inGpsLong;
-    private String workLocation; // Matches your frontend payload
+    // Renamed to match Android "latitude/longitude" or used for internal logic
+    private Double latitude;
+    private Double longitude;
+
+    private String type; // CLOCK_IN or CLOCK_OUT
+    private String workLocation;
 
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate attendanceDate;
 
     @Column(nullable = false)
-    private String status; // PRESENT, ABSENT, LEAVE
-}
+    private String status;
 
+    /**
+     * This fixes the "Cannot resolve method setEmpId" error in your Controller.
+     */
+    public void setEmpId(Integer empId) {
+        this.empId = empId;
+        if (this.employee == null) {
+            this.employee = new Employee();
+        }
+        this.employee.setId(empId);
+    }
+}

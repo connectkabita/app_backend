@@ -1,5 +1,6 @@
 package np.edu.nast.payroll.Payroll.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore; // Import this
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
@@ -45,7 +46,6 @@ public class Payroll {
     @JoinColumn(name = "payment_method_id", nullable = false)
     private PaymentMethod paymentMethod;
 
-    // --- EXPLICIT COLUMN MAPPINGS TO MATCH DB ---
     @Column(name = "basic_salary", nullable = false)
     @Builder.Default
     private Double basicSalary = 0.0;
@@ -129,6 +129,10 @@ public class Payroll {
     @Builder.Default
     @Column(name = "processed_at", nullable = false, updatable = false)
     private LocalDateTime processedAt = LocalDateTime.now();
+
+    // UPDATED: Added @JsonIgnore to prevent the mobile app from crashing
+    // when trying to load audit logs after the session is closed.
+    @JsonIgnore
     @OneToMany(mappedBy = "payroll", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
     private List<PayrollAudit> auditLogs;

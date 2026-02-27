@@ -46,8 +46,15 @@ public interface EmployeeRepository extends JpaRepository<Employee, Integer> {
 
     /**
      * Look up employee via the nested User entity's username.
+     * This is used by EmployeeServiceImpl.findIdByUsername.
      */
     Optional<Employee> findByUser_Username(String username);
+
+    /**
+     * Alternative explicit query to ensure the relationship traversal works.
+     */
+    @Query("SELECT e FROM Employee e WHERE e.user.username = :username")
+    Optional<Employee> findByUsername(@Param("username") String username);
 
     /**
      * Search functionality for the Admin Employee list.
